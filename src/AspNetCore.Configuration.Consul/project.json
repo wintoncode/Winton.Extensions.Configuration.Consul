@@ -1,0 +1,30 @@
+{
+  "version": "0.0.0",
+  "packOptions": {
+    "repository": {
+      "type": "git",
+      "url": "https://github.com/Choc13/AspNetCore.Configuration.Consul"
+    },
+    "tags": [
+      "aspnetcore",
+      "configuration",
+      "consul"
+    ]
+  },
+  "description": "Provides support for configuring Asp.Net Core applications with Consul",
+  "buildOptions": {
+    "outputName": "Chocolate.AspNetCore.Configuration.Consul",
+    "warningsAsErrors": true,
+    "xmlDoc": true
+  },
+  "dependencies": {
+    "Microsoft.Extensions.Configuration.Abstractions": "1.0.0",
+    "Microsoft.Extensions.DependencyInjection.Abstractions": "1.0.0"
+  },
+  "frameworks": {
+    "net451": {},
+    "netstandard1.3": {}
+  },
+  "name": "Chocolate.AspNetCore.Configuration.Consul",
+  "title": "Asp.Net Core Consul Configuration"
+}
