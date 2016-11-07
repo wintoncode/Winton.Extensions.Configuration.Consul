@@ -9,12 +9,20 @@ namespace WebApplication
 {
     public class Startup
     {
-        public Startup(IHostingEnvironment env)
+        public Startup(IHostingEnvironment env, ILoggerFactory loggerFactory)
         {
+            loggerFactory
+                .AddConsole()
+                .AddDebug();
+
+            ILogger logger = loggerFactory.CreateLogger(nameof(Startup));
+
             var builder = new ConfigurationBuilder()
                 .SetBasePath(env.ContentRootPath)
                 .AddJsonFile("appsettings.json", optional: false, reloadOnChange: true)
-                .AddConsul()
+                .AddConsul(options => {
+                    options.Key = $"{env.ApplicationName}/{env.EnvironmentName}";
+                })
                 .AddEnvironmentVariables();
             Configuration = builder.Build();
         }
@@ -29,12 +37,8 @@ namespace WebApplication
             services.AddSwaggerGen();
         }
 
-        public void Configure(IApplicationBuilder app, IHostingEnvironment env, ILoggerFactory loggerFactory)
+        public void Configure(IApplicationBuilder app, IHostingEnvironment env)
         {
-            loggerFactory
-                .AddConsole()
-                .AddDebug();
-
             app
                 .UseMvc()
                 .UseSwagger()

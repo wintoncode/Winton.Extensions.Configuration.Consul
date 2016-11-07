@@ -1,113 +1,60 @@
 using System;
+using System.Collections.Generic;
 using System.IO;
-using System.Net;
 using System.Threading.Tasks;
-using Consul;
 using Microsoft.Extensions.Configuration;
 
 namespace Chocolate.AspNetCore.Configuration.Consul
 {
-    /// <summary>
-    /// Provides configuration from Consul
-    /// </summary>
-    public sealed class ConsulConfigurationProvider : ConfigurationProvider
+    internal sealed class ConsulConfigurationProvider : ConfigurationProvider, IConsulConfigurationProvider
     {
-        private readonly ConsulConfigurationSource _source;
+        private readonly IConsulConfigurationClient _consulConfigClient;
 
-        /// <summary>
-        /// Constructs a ConsulConfigurationProvider from a JsonConfigurationProvider and the given
-        /// key of the root
-        /// </summary>
-        public ConsulConfigurationProvider(ConsulConfigurationSource source)
+        public ConsulConfigurationProvider(IConsulConfigurationSource source, IConsulConfigurationClient consulConfigClient)
         {
-            if (source == null)
+            if (source.Parser == null)
             {
-                throw new ArgumentNullException(nameof(source));
+                throw new ArgumentNullException(nameof(source.Parser));
             }
-            if (source.ConfigurationProvider == null)
+            if (string.IsNullOrWhiteSpace(source.Key))
             {
-                throw new ArgumentNullException(nameof(source.ConfigurationProvider));
+                throw new ArgumentNullException(nameof(source.Key));
             }
-            _source = source;
+            _consulConfigClient = consulConfigClient;
+            Source = source;
         }
 
-        /// <inheritdoc/>
+        public IConsulConfigurationSource Source { get; }
+
         public override void Load()
         {
-            Load(reload: false);
+            Load(reloading: false).Wait();
         }
 
-        /// <inheritdoc/>
-        public override void Set(string key, string value)
-        {
-            throw new NotImplementedException();
-        }
-
-        private string Key => $"{_source.ApplicationName}/{_source.EnvironmentName}";
-
-        private async Task Load(bool reload)
+        private async Task Load(bool reloading)
         {
             try 
             {
-                await TryLoad();
+                // Always optional on reload
+                bool optional = Source.Optional || reloading;
+                using (Stream configStream = await _consulConfigClient.GetConfig(Source.Key, optional))
+                {
+                    if (reloading)
+                    {
+                        // Always create new Data on reload to drop old keys
+                        Data = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
+                    }
+                    Data = Source.Parser.Parse(configStream);
+                }
             }
             catch(Exception exception)
             {
-                if (_source.Optional || reload)
+                var exceptionContext = new ConsulLoadExceptionContext(this, exception);
+                Source.OnLoadException?.Invoke(exceptionContext);
+                if (!exceptionContext.Ignore)
                 {
-                    _logger.Error(exception);
+                    throw exception;
                 }
-            }
-        }
-
-        private async Task TryLoad()
-        {
-            using (var client = new ConsulClient())
-            {
-                QueryResult<KVPair> result = await client.KV.Get(Key);
-                HandleResponse(result);
-            }
-        }
-
-        private void HandleResponse(QueryResult<KVPair> result)
-        {
-            switch (result.StatusCode)
-            {
-                case HttpStatusCode.OK:
-                    HandleOkResponse(result);
-                    return;
-                case HttpStatusCode.NotFound:
-                    HandleNotFoundResponse(result);
-                    return;
-                default:
-                    HandleErrorResponse(result);
-                    return;
-            }
-        }
-
-        private void HandleOkResponse(QueryResult<KVPair> result)
-        {
-            byte[] bytes = result.Response.Value;
-            using (Stream stream = new MemoryStream(bytes))
-            {
-                _source.ConfigurationProvider.Load(stream);
-            }
-        }
-
-        private void HandleNotFoundResponse(QueryResult<KVPair> result)
-        {
-            if (_source.Optional) 
-            {
-                return;
-            }
-            throw new Exception($"Config for key ${Key} is not optional and was not found");
-        }
-
-        private void HandleErrorResponse(QueryResult<KVPair> result)
-        {
-            if (result.StatusCode != HttpStatusCode.OK)
-            {
-                throw new Exception($"Error loading configuration from consul. Status code: {result.StatusCode}");
             }
         }
     }
