@@ -19,7 +19,7 @@ namespace WebApplication.Controllers
         [HttpGet("{key}")]
         public IActionResult GetValueForKey(string key)
         {
-            return Json(_configurationRoot.GetSection(key));
+            return Json(_configurationRoot[key]);
         }
     }
 }

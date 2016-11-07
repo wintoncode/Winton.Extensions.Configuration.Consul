@@ -44,7 +44,8 @@ namespace Chocolate.AspNetCore.Configuration.Consul
                         // Always create new Data on reload to drop old keys
                         Data = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
                     }
-                    Data = Source.Parser.Parse(configStream);
+                    IDictionary<string, string> parsedData = Source.Parser.Parse(configStream);
+                    Data = new Dictionary<string, string>(parsedData, StringComparer.OrdinalIgnoreCase);
                 }
             }
             catch(Exception exception)

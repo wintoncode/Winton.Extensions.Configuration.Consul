@@ -17,7 +17,7 @@ namespace Chocolate.AspNetCore.Configuration.Consul
             using (var streamReader = new StreamReader(stream))
             using (var jsonTextReader = new JsonTextReader(streamReader))
             {
-t                return serializer.Deserialize<Dictionary<string, string>>(jsonTextReader);
+                return serializer.Deserialize<Dictionary<string, string>>(jsonTextReader);
             }
         }
     }
