@@ -145,6 +145,26 @@ namespace Chocolate.AspNetCore.Configuration.Consul
             Assert.That(actualExceptionContext.Exception, Is.SameAs(exception));
         }
 
+         [Test]
+        public void ShouldSetProviderInLoadExceptionContextWhenExceptionDuringLoad()
+        {
+            ConsulLoadExceptionContext actualExceptionContext = null;
+            Exception exception = new Exception("Failed to load from Consul agent");
+            Task<Stream> configStreamTask = Task.FromException<Stream>(exception);
+            
+            _consulConfigClientMock.Setup(ccc => ccc.GetConfig(It.IsAny<string>(), It.IsAny<bool>())).Returns(configStreamTask);
+            _consulConfigSourceMock.SetupGet(ccs => ccs.OnLoadException).Returns(exceptionContext => {
+                actualExceptionContext = exceptionContext;
+            });
+            
+            try 
+            {
+                _consulConfigProvider.Load();
+            }
+            catch {}
+            Assert.That(actualExceptionContext.Provider, Is.SameAs(_consulConfigProvider));
+        }
+
         [Test]
         public void ShouldThrowExceptionIfOnLoadExceptionDoesNotSetIgnoreWhenExceptionDuringLoad()
         {
