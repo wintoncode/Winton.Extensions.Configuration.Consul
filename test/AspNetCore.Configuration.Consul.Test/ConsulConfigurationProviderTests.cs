@@ -120,10 +120,9 @@ namespace Chocolate.AspNetCore.Configuration.Consul
             {
                 _consulConfigProvider.Load();
             }
-            finally
-            {
-                Assert.That(calledOnLoadException, Is.True);
-            }
+            catch {}
+
+            Assert.That(calledOnLoadException, Is.True);
         }
 
         [Test]
@@ -142,10 +141,8 @@ namespace Chocolate.AspNetCore.Configuration.Consul
             {
                 _consulConfigProvider.Load();
             }
-            finally
-            {
-                Assert.That(actualExceptionContext.Exception, Is.SameAs(exception));
-            }
+            catch {}
+            Assert.That(actualExceptionContext.Exception, Is.SameAs(exception));
         }
 
         [Test]
