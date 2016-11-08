@@ -2,7 +2,7 @@ using System.Collections.Generic;
 using System.IO;
 using Newtonsoft.Json;
 
-namespace Chocolate.AspNetCore.Configuration.Consul
+namespace Chocolate.AspNetCore.Configuration.Consul.Parsers
 {
     /// <summary>
     /// Implemenation of <see cref="IConfigurationParser"/> for parsing JSON Configuration

@@ -1,3 +1,4 @@
+using Chocolate.AspNetCore.Configuration.Consul.Parsers;
 using NUnit.Framework;
 
 namespace Chocolate.AspNetCore.Configuration.Consul

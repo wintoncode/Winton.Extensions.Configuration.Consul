@@ -1,7 +1,7 @@
 using System.Collections.Generic;
 using System.IO;
 
-namespace Chocolate.AspNetCore.Configuration.Consul
+namespace Chocolate.AspNetCore.Configuration.Consul.Parsers
 {
     /// <summary>
     /// Defines how the configuration loaded from Consul should be parsed.
