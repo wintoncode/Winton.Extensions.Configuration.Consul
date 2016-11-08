@@ -28,7 +28,14 @@ namespace Chocolate.AspNetCore.Configuration.Consul
 
         public override void Load()
         {
-            Load(reloading: false).Wait();
+            try
+            {
+                Load(reloading: false).Wait();
+            }
+            catch (AggregateException aggregateException)
+            {
+                throw aggregateException.InnerException;
+            }
         }
 
         private async Task Load(bool reloading)
