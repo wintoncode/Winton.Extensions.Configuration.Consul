@@ -40,7 +40,7 @@ namespace Chocolate.AspNetCore.Configuration.Consul
 
         private async Task Load(bool reloading)
         {
-            try 
+            try
             {
                 // Always optional on reload
                 bool optional = Source.Optional || reloading;

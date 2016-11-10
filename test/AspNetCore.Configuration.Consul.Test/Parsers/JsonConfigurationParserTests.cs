@@ -27,7 +27,20 @@ namespace Chocolate.AspNetCore.Configuration.Consul.Parsers
                 var result = _parser.Parse(stream);
                 Assert.That(result[key], Is.EqualTo(value));
             }
+        }
 
+        [Test]
+        public void ShouldParseComplexJsonFromStream()
+        {
+            const string parentKey = "parentKey";
+            const string childKey = "childKey";
+            const string value = "Value"; 
+            string json = $"{{\"{parentKey}\": {{\"{childKey}\": \"{value}\"}} }}";
+            using (Stream stream = new MemoryStream(Encoding.UTF8.GetBytes(json)))
+            {
+                var result = _parser.Parse(stream);
+                Assert.That(result[$"{parentKey}:{childKey}"], Is.EqualTo(value));
+            }
         }
     }
 }
