@@ -1,6 +1,7 @@
 using System.Collections.Generic;
 using System.IO;
 using Newtonsoft.Json;
+using Newtonsoft.Json.Linq;
 
 namespace Chocolate.AspNetCore.Configuration.Consul.Parsers.Json
 {
@@ -13,10 +14,11 @@ namespace Chocolate.AspNetCore.Configuration.Consul.Parsers.Json
         public IDictionary<string, string> Parse(Stream stream)
         {
             using (var streamReader = new StreamReader(stream))
-            using (var reader = new JsonTextReader(new StreamReader(stream)))
+            using (var jsonReader = new JsonTextReader(new StreamReader(stream)))
             {
-                var flattener = new JsonFlattener(reader);
-                return flattener.Flatten();
+                jsonReader.DateParseHandling = DateParseHandling.None;
+                JObject jsonConfig = JObject.Load(jsonReader);
+                return jsonConfig.Flatten();
             }
         }
     }

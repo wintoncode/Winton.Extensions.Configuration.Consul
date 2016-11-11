@@ -77,5 +77,30 @@ namespace Chocolate.AspNetCore.Configuration.Consul.Parsers.Json
                 };
             Assert.That(visitor.VisitJObject(jObject).ToList(), Is.EqualTo(expectedPrimitives).AsCollection);
         }
+
+        [Test]
+        public void ShouldVisitPrimitivesForObjectsInAnArray()
+        {
+            const string key = "Array";
+            const string nestedObjectKey = "ObjectInArray";
+            const int value = 1;
+            var jObject = new JObject(
+                new JProperty(key,
+                    new JArray(
+                        new JObject(
+                            new JProperty(nestedObjectKey, value)
+                        )
+                    )
+                )
+            );
+
+            var visitor = new JsonPrimitiveVisitor();
+
+            ICollection<KeyValuePair<string, string>> expectedPrimitives = new []
+                {
+                    new KeyValuePair<string, string>($"{key}:0:{nestedObjectKey}", value.ToString()),
+                };
+            Assert.That(visitor.VisitJObject(jObject).ToList(), Is.EqualTo(expectedPrimitives).AsCollection);
+        }
     }
 }
