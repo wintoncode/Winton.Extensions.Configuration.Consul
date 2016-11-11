@@ -2,7 +2,7 @@ using System.IO;
 using System.Text;
 using NUnit.Framework;
 
-namespace Chocolate.AspNetCore.Configuration.Consul.Parsers
+namespace Chocolate.AspNetCore.Configuration.Consul.Parsers.Json
 {
     [TestFixture]
     [TestOf(nameof(JsonConfigurationParser))]

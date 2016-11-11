@@ -1,4 +1,4 @@
-using Chocolate.AspNetCore.Configuration.Consul.Parsers;
+using Chocolate.AspNetCore.Configuration.Consul.Parsers.Json;
 using NUnit.Framework;
 
 namespace Chocolate.AspNetCore.Configuration.Consul

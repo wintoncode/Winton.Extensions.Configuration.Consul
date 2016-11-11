@@ -27,7 +27,7 @@ namespace Chocolate.AspNetCore.Configuration.Consul
                     case HttpStatusCode.NotFound:
                         if (optional) 
                         {
-                            return new MemoryStream();
+                            return null;
                         }
                         throw new Exception($"The configuration for key {key} was not found and is not optional.");
                     default:

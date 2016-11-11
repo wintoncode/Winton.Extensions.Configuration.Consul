@@ -9,36 +9,30 @@ namespace Chocolate.AspNetCore.Configuration.Consul.Parsers.Json
     internal sealed class JsonPrimitiveVisitor
     {
         private readonly Stack<string> _context = new Stack<string>();
-        private readonly JObject _jObject;
-
-        public JsonPrimitiveVisitor(JObject jObject)
-        {
-            _jObject = jObject;
-        }
 
         /// <summary>
         /// Recursively visits each primitive of the JSON object using depth-first traversal.
         /// </summary>
         /// <returns>A KV pair for the full path to the property and its value</returns>
-        public IEnumerable<KeyValuePair<string, string>> VisitJObject(JObject jObject)
+        public ICollection<KeyValuePair<string, string>> VisitJObject(JObject jObject)
         {
-            return jObject.Properties().SelectMany(property => VisitProperty(property.Name, property.Value));
+            return jObject.Properties().SelectMany(property => VisitProperty(property.Name, property.Value)).ToList();
         }
 
-        private IEnumerable<KeyValuePair<string, string>> VisitArray(JArray array)
+        private ICollection<KeyValuePair<string, string>> VisitArray(JArray array)
         {
-            return array.SelectMany((token, index) => VisitProperty(index.ToString(), token));
+            return array.SelectMany((token, index) => VisitProperty(index.ToString(), token)).ToList();
         }
 
-        private IEnumerable<KeyValuePair<string, string>> VisitProperty(string key, JToken value)
+        private ICollection<KeyValuePair<string, string>> VisitProperty(string key, JToken token)
         {
             _context.Push(key);
-            var primitives = VisitToken(value);
+            var primitives = VisitToken(token);
             _context.Pop();
-            return primitives;
+            return primitives.ToList();
         }
 
-        private IEnumerable<KeyValuePair<string, string>> VisitToken(JToken token)
+        private ICollection<KeyValuePair<string, string>> VisitToken(JToken token)
         {
             switch (token.Type)
             {
@@ -59,10 +53,14 @@ namespace Chocolate.AspNetCore.Configuration.Consul.Parsers.Json
             }
         }
 
-        private IEnumerable<KeyValuePair<string, string>> VisitPrimitive(JToken primitive)
+        private ICollection<KeyValuePair<string, string>> VisitPrimitive(JToken primitive)
         {
+            if (_context.Count == 0)
+            {
+                throw new Exception("You're yielding so the context has changed by that time");
+            }
             var key = ConfigurationPath.Combine(_context.Reverse());
-            yield return new KeyValuePair<string, string>(key, primitive.ToString());
+            return new[] {new KeyValuePair<string, string>(key, primitive.ToString())};
         }
     }
 }

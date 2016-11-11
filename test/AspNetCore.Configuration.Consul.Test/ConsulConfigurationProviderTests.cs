@@ -76,7 +76,7 @@ namespace Chocolate.AspNetCore.Configuration.Consul
         {
             const string configValue = "Value";
             var parsedData = new Dictionary<string, string>{{actualKey, configValue}};
-            Stream stream = null;
+            Stream stream = new MemoryStream();
             Task<Stream> configStreamTask = Task.FromResult(stream);
 
             _configParserMock.Setup(cp => cp.Parse(stream)).Returns(parsedData);
@@ -90,9 +90,23 @@ namespace Chocolate.AspNetCore.Configuration.Consul
         }
 
         [Test]
-        public void ShouldLoadConfigOptionallyIfSourceOptionalIsSetTrue()
+        public void ShouldNotParseIfStreamIsNullWhenLoad()
         {
             Stream stream = null;
+            Task<Stream> configStreamTask = Task.FromResult(stream);
+
+            _configParserMock.Setup(cp => cp.Parse(stream)).Returns(new Dictionary<string, string>());
+            _consulConfigClientMock.Setup(ccc => ccc.GetConfig(_Key, false)).Returns(configStreamTask);
+            
+            _consulConfigProvider.Load();
+
+            Assert.That(() => _configParserMock.Verify(cp => cp.Parse(stream), Times.Never), Throws.Nothing);
+        }
+
+        [Test]
+        public void ShouldLoadConfigOptionallyIfSourceOptionalIsSetTrue()
+        {
+            Stream stream = new MemoryStream();
             Task<Stream> configStreamTask = Task.FromResult(stream);
 
             _configParserMock.Setup(cp => cp.Parse(stream)).Returns(new Dictionary<string, string>());

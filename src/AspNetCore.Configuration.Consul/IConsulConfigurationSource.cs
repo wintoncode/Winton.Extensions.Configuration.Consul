@@ -1,6 +1,7 @@
 using System;
 using System.Net.Http;
 using Chocolate.AspNetCore.Configuration.Consul.Parsers;
+using Chocolate.AspNetCore.Configuration.Consul.Parsers.Json;
 using Consul;
 using Microsoft.Extensions.Configuration;
 

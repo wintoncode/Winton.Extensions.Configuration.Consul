@@ -46,6 +46,10 @@ namespace Chocolate.AspNetCore.Configuration.Consul
                 bool optional = Source.Optional || reloading;
                 using (Stream configStream = await _consulConfigClient.GetConfig(Source.Key, optional))
                 {
+                    if (configStream == null)
+                    {
+                        return;
+                    }
                     if (reloading)
                     {
                         // Always create new Data on reload to drop old keys
