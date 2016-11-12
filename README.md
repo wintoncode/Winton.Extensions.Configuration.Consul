@@ -10,7 +10,7 @@ Add `AspNetCore.Configuration.Consul` to the `dependencies` section of your proj
 
 Add the following to your `StartUp` class for the minimal setup:
 
-```
+```csharp
 var builder = new ConfigurationBuilder()
     .AddConsul($"{env.ApplicationName}.{env.EnvironmentName}");
 Configuration = builder.Build();
