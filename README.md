@@ -16,7 +16,7 @@ var builder = new ConfigurationBuilder()
 Configuration = builder.Build();
 ```
 
-Assuming the application is running in the development environment and the application name is Website, this will load a json configuration object from the path `Website/Development`
+Assuming the application is running in the development environment and the application name is Website, this will load a json configuration object under the key `Website/Development` in Consul.
 
 Or specify an options `Action` as a second argument to set the options specified below.
 
