@@ -1,6 +1,6 @@
 # Asp.Net Core Consul Configuration
 
-Add support for configuring Asp.Net Core application using Consul. It is expected that configuration will be stored as a single object under a given key. Works great with [git2consul](https://github.com/Cimpress-MCP/git2consul).
+Adds support for configuring Asp.Net Core application using Consul. It is expected that the configuration will be stored as a single object under a given key in Consul. Works great with [git2consul](https://github.com/Cimpress-MCP/git2consul).
 
 ## Installation
 
@@ -16,7 +16,7 @@ var builder = new ConfigurationBuilder()
 Configuration = builder.Build();
 ```
 
-Assuming the application is running in the development environment and the application name is Website, this will load a json configuration object under the key `Website/Development` in Consul.
+Assuming the application is running in the development environment and the application name is Website, this will load a json configuration object from the key `Website/Development` in Consul.
 
 Or specify an options `Action` as a second argument to set the options specified below.
 

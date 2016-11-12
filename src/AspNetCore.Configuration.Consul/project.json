@@ -1,17 +1,4 @@
 {
-  "version": "0.0.0",
-  "packOptions": {
-    "repository": {
-      "type": "git",
-      "url": "https://github.com/Choc13/AspNetCore.Configuration.Consul"
-    },
-    "tags": [
-      "aspnetcore",
-      "configuration",
-      "consul"
-    ]
-  },
-  "description": "Provides support for configuring Asp.Net Core applications with Consul",
   "buildOptions": {
     "outputName": "AspNetCore.Configuration.Consul",
     "warningsAsErrors": true,
@@ -23,10 +10,32 @@
     "Microsoft.Extensions.Configuration.Json": "1.0.0",
     "Microsoft.Extensions.DependencyInjection.Abstractions": "1.0.0"
   },
+  "description": "Provides support for configuring Asp.Net Core applications with Consul",
   "frameworks": {
     "net451": {},
     "netstandard1.3": {}
   },
   "name": "AspNetCore.Configuration.Consul",
-  "title": "Asp.Net Core Consul Configuration"
+  "packOptions": {
+    "repository": {
+      "type": "git",
+      "url": "https://github.com/Choc13/AspNetCore.Configuration.Consul"
+    },
+    "tags": [
+      "Asp.Net Core",
+      "aspnetcore",
+      "configuration",
+      "consul"
+    ]
+  },
+  "title": "Asp.Net Core Consul Configuration",
+  "tools": {
+    "dotnet-gitversion": {
+      "version": "*",
+      "imports": [
+        "dotnet"
+      ]
+    }
+  },
+  "version": "0.0.0",
 }
