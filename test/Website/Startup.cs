@@ -19,9 +19,7 @@ namespace WebApplication
 
             var builder = new ConfigurationBuilder()
                 .SetBasePath(env.ContentRootPath)
-                .AddConsul(options => {
-                    options.Key = $"{env.ApplicationName}/{env.EnvironmentName.ToLower()}/appsettings.json";
-                })
+                .AddConsul($"{env.ApplicationName}/{env.EnvironmentName.ToLower()}/appsettings.json")
                 .AddEnvironmentVariables();
             Configuration = builder.Build();
         }

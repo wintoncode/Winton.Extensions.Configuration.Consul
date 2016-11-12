@@ -13,18 +13,25 @@ namespace Chocolate.AspNetCore.Configuration.Consul
         /// Adds Consul as a configuration source to the <see cref="IConfigurationBuilder"/>
         /// using the default settings in <see cref="IConsulConfigurationSource"/>.
         /// </summary>
-        public static IConfigurationBuilder AddConsul(this IConfigurationBuilder builder)
+        /// <param name="builder">The builder to add consul to</param>
+        /// <param name="key">The key in consul where the configuration is located</param>
+        /// <returns>The builder</returns>
+        public static IConfigurationBuilder AddConsul(this IConfigurationBuilder builder, string key)
         {
-            return builder.AddConsul(options => {});
+            return builder.AddConsul(key, options => {});
         }
 
         /// <summary>
         /// Adds Consul as a configuration source to the <see cref="IConfigurationBuilder"/>
         /// and applies the given overrides to the <see cref="IConsulConfigurationSource"/>.
         /// </summary>
-        public static IConfigurationBuilder AddConsul(this IConfigurationBuilder builder, Action<IConsulConfigurationSource> options)
+        /// <param name="builder">The builder to add consul to</param>
+        /// <param name="key">The key in consul where the configuration is located</param>
+        /// <param name="options">An action used to configure the options of the <see cref="IConsulConfigurationSource"/></param>
+        /// <returns>The builder</returns>
+        public static IConfigurationBuilder AddConsul(this IConfigurationBuilder builder, string key, Action<IConsulConfigurationSource> options)
         {
-            var consulConfigSource = new ConsulConfigurationSource();
+            var consulConfigSource = new ConsulConfigurationSource(key);
             options(consulConfigSource);
             return builder.Add(consulConfigSource);
         }

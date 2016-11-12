@@ -36,7 +36,7 @@ namespace Chocolate.AspNetCore.Configuration.Consul
         /// <summary>
         /// The key in Consul where the configuration is located.
         /// </summary>
-        string Key { get; set; }
+        string Key { get; }
 
         /// <summary>
         /// An <see cref="Action"/> that is invoked when an exception is raised during config load.

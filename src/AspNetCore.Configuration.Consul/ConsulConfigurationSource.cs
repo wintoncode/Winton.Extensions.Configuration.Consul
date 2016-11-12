@@ -9,8 +9,9 @@ namespace Chocolate.AspNetCore.Configuration.Consul
 {
     internal sealed class ConsulConfigurationSource : IConsulConfigurationSource
     {
-        public ConsulConfigurationSource()
+        public ConsulConfigurationSource(string key)
         {
+            Key = key;
             Parser = new JsonConfigurationParser();
         }
 
@@ -20,7 +21,7 @@ namespace Chocolate.AspNetCore.Configuration.Consul
 
         public Action<HttpClientHandler> ConsulHttpClientHandlerOptions { get; set; }
 
-        public string Key { get; set; }
+        public string Key { get; }
 
         public Action<ConsulLoadExceptionContext> OnLoadException { get; set; }
 

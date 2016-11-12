@@ -7,9 +7,18 @@ namespace Chocolate.AspNetCore.Configuration.Consul
     internal sealed class ConsulConfigurationSourceTests
     {
         [Test]
+        public void ShouldSetKeyInConstructor()
+        {
+            const string key = "Key";
+            var source = new ConsulConfigurationSource(key);
+
+            Assert.That(source.Key, Is.EqualTo(key));
+        }
+
+        [Test]
         public void ShouldHaveJsonConfgurationParserByDefault()
         {
-            var source = new ConsulConfigurationSource();
+            var source = new ConsulConfigurationSource("");
 
             Assert.That(source.Parser, Is.TypeOf<JsonConfigurationParser>());
         }
@@ -17,7 +26,7 @@ namespace Chocolate.AspNetCore.Configuration.Consul
         [Test]
         public void ShouldSetOptionalToFalseByDefault()
         {
-            var source = new ConsulConfigurationSource();
+            var source = new ConsulConfigurationSource("");
 
             Assert.That(source.Optional, Is.False);
         }
@@ -25,7 +34,7 @@ namespace Chocolate.AspNetCore.Configuration.Consul
         [Test]
         public void ShouldSetReloadOnChangeToFalseByDefault()
         {
-            var source = new ConsulConfigurationSource();
+            var source = new ConsulConfigurationSource("");
 
             Assert.That(source.ReloadOnChange, Is.False);
         }
