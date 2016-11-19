@@ -8,8 +8,6 @@ namespace Chocolate.AspNetCore.Configuration.Consul.Parsers.Json
     [TestFixture]
     internal sealed class JsonPrimitiveVisitorTests
     {
-        private JsonPrimitiveVisitor _jsonPrimitiveVisitor;
-
         [Test]
         [TestCase("string")]
         [TestCase(1)]

@@ -1,16 +1,17 @@
 using System;
+using System.Threading;
 
 namespace Chocolate.AspNetCore.Configuration.Consul
 {
     /// <summary>
-    /// Contains information about exceptions that occuring during a configuration load from Consul.
+    /// Contains information about a consul load exception.
     /// </summary>
-    public sealed class ConsulLoadExceptionContext
+    public sealed class ConsulWatchExceptionContext
     {
-        internal ConsulLoadExceptionContext(IConsulConfigurationSource source, Exception exception)
+        internal ConsulWatchExceptionContext(IConsulConfigurationSource source, Exception exception)
         {
-            Source = source;
             Exception = exception;
+            Source = source;
         }
 
         /// <summary>
@@ -19,13 +20,8 @@ namespace Chocolate.AspNetCore.Configuration.Consul
         public Exception Exception { get; }
 
         /// <summary>
-        /// Set to true to prevent the exception from being thrown. 
-        /// I.e. if the exception has been handled.
-        /// </summary>
-        public bool Ignore { get; set; }
-
-        /// <summary>
         /// The <see cref="IConsulConfigurationSource"/> of the provider that caused the exception.
+        /// Can be used to access the <see cref="CancellationToken"/> which can terminate the watcher.
         /// </summary>
         public IConsulConfigurationSource Source { get; }
     }

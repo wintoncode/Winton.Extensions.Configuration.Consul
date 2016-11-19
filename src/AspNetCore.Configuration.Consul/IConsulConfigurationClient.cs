@@ -1,10 +1,13 @@
-using System.IO;
+using System;
 using System.Threading.Tasks;
+using Microsoft.Extensions.Primitives;
 
 namespace Chocolate.AspNetCore.Configuration.Consul
 {
     internal interface IConsulConfigurationClient
     {
-        Task<Stream> GetConfig(string key, bool optional);
+        Task<byte[]> GetConfig(bool optional);
+
+        IChangeToken Watch(Action<ConsulWatchExceptionContext> onException);
     }
 }

@@ -1,5 +1,6 @@
 using System;
 using System.Net.Http;
+using System.Threading;
 using Chocolate.AspNetCore.Configuration.Consul.Parsers;
 using Chocolate.AspNetCore.Configuration.Consul.Parsers.Json;
 using Consul;
@@ -8,10 +9,17 @@ using Microsoft.Extensions.Configuration;
 namespace Chocolate.AspNetCore.Configuration.Consul
 {
     /// <summary>
-    /// An IConfigurationSource for the ConsulConfigurationProvider
+    /// An <see cref="IConfigurationSource"/> for the ConsulConfigurationProvider
     /// </summary>
     public interface IConsulConfigurationSource : IConfigurationSource
     {
+        /// <summary>
+        /// A <see cref="CancellationToken"/> that can be used to cancel any consul requests
+        /// either loading or watching via long polling.
+        /// It is recommended that this is cancelled during shut down.
+        /// </summary>
+        CancellationToken CancellationToken { get; set; }
+
         /// <summary>
         /// An <see cref="Action"/> to be applied to the <see cref="ConsulClientConfiguration"/> 
         /// during construction of the <see cref="IConsulClient"/>.
@@ -43,6 +51,12 @@ namespace Chocolate.AspNetCore.Configuration.Consul
         /// Used by clients to handle the exception if possible and prevent it from being thrown.
         /// </summary>
         Action<ConsulLoadExceptionContext> OnLoadException { get; set; }
+
+        /// <summary>
+        /// An <see cref="Action"/> that is invoked when an exception is raised whilst watching.
+        /// Used by clients to acknowledge the excetion and possibly cancel the watcher.
+        /// </summary>
+        Action<ConsulWatchExceptionContext> OnWatchException { get; set; }
 
         /// <summary>
         /// Determines if loading the config is optional.

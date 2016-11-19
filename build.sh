@@ -9,6 +9,7 @@ fi
 
 buildFolder=".build"
 buildFile="$buildFolder/KoreBuild.sh"
+dotnetInstallFile="$buildFolder/dotnet/dotnet-install.sh"
 
 if test ! -d $buildFolder; then
     echo "Downloading KoreBuild from $koreBuildZip"
@@ -39,8 +40,19 @@ if test ! -d $buildFolder; then
     
     # Cleanup
     if test ! -d $tempFolder; then
-        rm -rf $tempFolder  
+        rm -rf $tempFolder
     fi
 fi
 
-$buildFile -r $repoFolder "$@"
+# We just use KoreBuild to install the dotnet cli
+$dotnetInstallFile
+
+# Then we do a custom build pipeline that include versioning
+dotnet restore
+cd src/AspNetCore.Configuration.Consul
+dotnet gitversion
+cd ../../
+dotnet build src/*/project.json test/*/project.json --configuration Release
+dotnet test --no-build --configuration Release -f netcoreapp1.0 test/*/project.json
+dotnet pack --no-build src/*/project.json --configuration Release
+nuget push src/AspNetCore.Configuration.Consul/bin/Release/*.nupkg -ApiKey 40a11e65-c7f8-47cb-bfb9-c86ccd5e8234 -NonInteractive -Verbosity Detailed

@@ -1,3 +1,4 @@
+using System.Threading;
 using Chocolate.AspNetCore.Configuration.Consul;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Hosting;
@@ -9,6 +10,8 @@ namespace WebApplication
 {
     public class Startup
     {
+        private readonly CancellationTokenSource _consulConfigCancellationTokenSource = new CancellationTokenSource();
+
         public Startup(IHostingEnvironment env, ILoggerFactory loggerFactory)
         {
             loggerFactory
@@ -19,7 +22,12 @@ namespace WebApplication
 
             var builder = new ConfigurationBuilder()
                 .SetBasePath(env.ContentRootPath)
-                .AddConsul($"{env.ApplicationName}/{env.EnvironmentName.ToLower()}/appsettings.json")
+                .AddConsul(
+                    $"{env.ApplicationName}/{env.EnvironmentName.ToLower()}/appsettings.json", 
+                    _consulConfigCancellationTokenSource.Token,
+                    options => {
+                        options.ReloadOnChange = true;
+                    })
                 .AddEnvironmentVariables();
             Configuration = builder.Build();
         }
@@ -34,12 +42,14 @@ namespace WebApplication
             services.AddSwaggerGen();
         }
 
-        public void Configure(IApplicationBuilder app, IHostingEnvironment env)
+        public void Configure(IApplicationBuilder app, IHostingEnvironment env, IApplicationLifetime appLifetime)
         {
             app
                 .UseMvc()
                 .UseSwagger()
                 .UseSwaggerUi("api");
+
+            appLifetime.ApplicationStopping.Register(_consulConfigCancellationTokenSource.Cancel);
         }
     }
 }

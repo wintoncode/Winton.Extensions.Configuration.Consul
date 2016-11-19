@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using System.IO;
+using System.Linq;
 using System.Threading.Tasks;
 using Chocolate.AspNetCore.Configuration.Consul.Parsers;
 using Moq;
@@ -47,40 +48,16 @@ namespace Chocolate.AspNetCore.Configuration.Consul
         }
 
         [Test]
-        public void ShouldThrowIfKeyIsNullWhenConstructed()
-        {
-            _consulConfigSourceMock.SetupGet(ccs => ccs.Key).Returns((string)null);
-
-            Assert.That(
-                () => new ConsulConfigurationProvider(_consulConfigSourceMock.Object, _consulConfigClientMock.Object), 
-                Throws.TypeOf<ArgumentNullException>()
-                    .And.Message.Contains(nameof(_consulConfigSourceMock.Object.Key)));
-        }
-
-        [Test]
-        public void ShouldThrowIfKeyIsWhitespaceWhenConstructed()
-        {
-            _consulConfigSourceMock.SetupGet(ccs => ccs.Parser).Returns(_configParserMock.Object);
-            _consulConfigSourceMock.SetupGet(ccs => ccs.Key).Returns("   ");
-
-            Assert.That(
-                () => new ConsulConfigurationProvider(_consulConfigSourceMock.Object, _consulConfigClientMock.Object), 
-                Throws.TypeOf<ArgumentNullException>()
-                    .And.Message.Contains(nameof(_consulConfigSourceMock.Object.Key)));
-        }
-
-        [Test]
         [TestCase("Key", "Key")]
         [TestCase("KEY", "key", TestName = "ShouldParseLoadedConfigIntoCaseInsensitiveDictionary")]
         public void ShouldParseLoadedConfigIntoDictionary(string actualKey, string lookupKey)
         {
             const string configValue = "Value";
             var parsedData = new Dictionary<string, string>{{actualKey, configValue}};
-            Stream stream = new MemoryStream();
-            Task<Stream> configStreamTask = Task.FromResult(stream);
+            Task<byte[]> configStreamTask = Task.FromResult(new byte[]{});
 
-            _configParserMock.Setup(cp => cp.Parse(stream)).Returns(parsedData);
-            _consulConfigClientMock.Setup(ccc => ccc.GetConfig(_Key, false)).Returns(configStreamTask);
+            _consulConfigClientMock.Setup(ccc => ccc.GetConfig(false)).Returns(configStreamTask);
+            _configParserMock.Setup(cp => cp.Parse(It.IsAny<MemoryStream>())).Returns(parsedData);
             
             _consulConfigProvider.Load();
 
@@ -90,32 +67,41 @@ namespace Chocolate.AspNetCore.Configuration.Consul
         }
 
         [Test]
-        public void ShouldNotParseIfStreamIsNullWhenLoad()
+        public void ShouldHaveEmptyDataIfConfigIsMissingAndOptional()
         {
-            Stream stream = null;
-            Task<Stream> configStreamTask = Task.FromResult(stream);
-
-            _configParserMock.Setup(cp => cp.Parse(stream)).Returns(new Dictionary<string, string>());
-            _consulConfigClientMock.Setup(ccc => ccc.GetConfig(_Key, false)).Returns(configStreamTask);
+            Task<byte[]> configBytesTask = Task.FromResult((byte[])null);
+            _consulConfigSourceMock.SetupGet(ccs => ccs.Optional).Returns(true);
+            _consulConfigClientMock.Setup(ccc => ccc.GetConfig(true)).Returns(configBytesTask);
             
             _consulConfigProvider.Load();
 
-            Assert.That(() => _configParserMock.Verify(cp => cp.Parse(stream), Times.Never), Throws.Nothing);
+            Assert.That(
+                _consulConfigProvider.GetChildKeys(Enumerable.Empty<string>(), ""),
+                Is.EqualTo(Enumerable.Empty<string>()).AsCollection);
+        }
+
+        [Test]
+        public void ShouldNotParseIfConfigBytesIsNullWhenLoad()
+        {
+            Task<byte[]> configBytesTask = Task.FromResult((byte[])null);
+            _consulConfigClientMock.Setup(ccc => ccc.GetConfig(false)).Returns(configBytesTask);
+            
+            _consulConfigProvider.Load();
+
+            Assert.That(() => _configParserMock.Verify(cp => cp.Parse(It.IsAny<MemoryStream>()), Times.Never), Throws.Nothing);
         }
 
         [Test]
         public void ShouldLoadConfigOptionallyIfSourceOptionalIsSetTrue()
         {
-            Stream stream = new MemoryStream();
-            Task<Stream> configStreamTask = Task.FromResult(stream);
+            Task<byte[]> configBytesTask = Task.FromResult((byte[])null);
 
-            _configParserMock.Setup(cp => cp.Parse(stream)).Returns(new Dictionary<string, string>());
             _consulConfigSourceMock.SetupGet(ccs => ccs.Optional).Returns(true);
-            _consulConfigClientMock.Setup(ccc => ccc.GetConfig(_Key, true)).Returns(configStreamTask);
+            _consulConfigClientMock.Setup(ccc => ccc.GetConfig(true)).Returns(configBytesTask);
             
             _consulConfigProvider.Load();
 
-            Assert.That(() => _consulConfigClientMock.Verify(ccc => ccc.GetConfig(_Key, true)), Throws.Nothing);
+            Assert.That(() => _consulConfigClientMock.Verify(ccc => ccc.GetConfig(true)), Throws.Nothing);
         }
 
         [Test]
@@ -123,9 +109,9 @@ namespace Chocolate.AspNetCore.Configuration.Consul
         {
             bool calledOnLoadException = false;
             Exception exception = new Exception("Failed to load from Consul agent");
-            Task<Stream> configStreamTask = Task.FromException<Stream>(exception);
+            Task<byte[]> configBytesTask = Task.FromException<byte[]>(exception);
             
-            _consulConfigClientMock.Setup(ccc => ccc.GetConfig(It.IsAny<string>(), It.IsAny<bool>())).Returns(configStreamTask);
+            _consulConfigClientMock.Setup(ccc => ccc.GetConfig(It.IsAny<bool>())).Returns(configBytesTask);
             _consulConfigSourceMock.SetupGet(ccs => ccs.OnLoadException).Returns(exceptionContext => {
                 calledOnLoadException = true;
             });
@@ -144,9 +130,9 @@ namespace Chocolate.AspNetCore.Configuration.Consul
         {
             ConsulLoadExceptionContext actualExceptionContext = null;
             Exception exception = new Exception("Failed to load from Consul agent");
-            Task<Stream> configStreamTask = Task.FromException<Stream>(exception);
+            Task<byte[]> configBytesTask = Task.FromException<byte[]>(exception);
             
-            _consulConfigClientMock.Setup(ccc => ccc.GetConfig(It.IsAny<string>(), It.IsAny<bool>())).Returns(configStreamTask);
+            _consulConfigClientMock.Setup(ccc => ccc.GetConfig(It.IsAny<bool>())).Returns(configBytesTask);
             _consulConfigSourceMock.SetupGet(ccs => ccs.OnLoadException).Returns(exceptionContext => {
                 actualExceptionContext = exceptionContext;
             });
@@ -160,13 +146,13 @@ namespace Chocolate.AspNetCore.Configuration.Consul
         }
 
          [Test]
-        public void ShouldSetProviderInLoadExceptionContextWhenExceptionDuringLoad()
+        public void ShouldSetSourceInLoadExceptionContextWhenExceptionDuringLoad()
         {
             ConsulLoadExceptionContext actualExceptionContext = null;
             Exception exception = new Exception("Failed to load from Consul agent");
-            Task<Stream> configStreamTask = Task.FromException<Stream>(exception);
+            Task<byte[]> configBytesTask = Task.FromException<byte[]>(exception);
             
-            _consulConfigClientMock.Setup(ccc => ccc.GetConfig(It.IsAny<string>(), It.IsAny<bool>())).Returns(configStreamTask);
+            _consulConfigClientMock.Setup(ccc => ccc.GetConfig(It.IsAny<bool>())).Returns(configBytesTask);
             _consulConfigSourceMock.SetupGet(ccs => ccs.OnLoadException).Returns(exceptionContext => {
                 actualExceptionContext = exceptionContext;
             });
@@ -176,16 +162,16 @@ namespace Chocolate.AspNetCore.Configuration.Consul
                 _consulConfigProvider.Load();
             }
             catch {}
-            Assert.That(actualExceptionContext.Provider, Is.SameAs(_consulConfigProvider));
+            Assert.That(actualExceptionContext.Source, Is.SameAs(_consulConfigSourceMock.Object));
         }
 
         [Test]
         public void ShouldThrowExceptionIfOnLoadExceptionDoesNotSetIgnoreWhenExceptionDuringLoad()
         {
             Exception exception = new Exception("Failed to load from Consul agent");
-            Task<Stream> configStreamTask = Task.FromException<Stream>(exception);
+            Task<byte[]> configBytesTask = Task.FromException<byte[]>(exception);
             
-            _consulConfigClientMock.Setup(ccc => ccc.GetConfig(It.IsAny<string>(), It.IsAny<bool>())).Returns(configStreamTask);
+            _consulConfigClientMock.Setup(ccc => ccc.GetConfig(It.IsAny<bool>())).Returns(configBytesTask);
             _consulConfigSourceMock.SetupGet(ccs => ccs.OnLoadException).Returns(exceptionContext => {
                 exceptionContext.Ignore = false;
             });
@@ -197,9 +183,9 @@ namespace Chocolate.AspNetCore.Configuration.Consul
         public void ShouldNotThrowExceptionIfOnLoadExceptionDoesSetIgnoreWhenExceptionDuringLoad()
         {
             Exception exception = new Exception("Failed to load from Consul agent");
-            Task<Stream> configStreamTask = Task.FromException<Stream>(exception);
+            Task<byte[]> configBytesTask = Task.FromException<byte[]>(exception);
             
-            _consulConfigClientMock.Setup(ccc => ccc.GetConfig(It.IsAny<string>(), It.IsAny<bool>())).Returns(configStreamTask);
+            _consulConfigClientMock.Setup(ccc => ccc.GetConfig(It.IsAny<bool>())).Returns(configBytesTask);
             _consulConfigSourceMock.SetupGet(ccs => ccs.OnLoadException).Returns(exceptionContext => {
                 exceptionContext.Ignore = true;
             });
