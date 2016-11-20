@@ -1,16 +1,16 @@
 version: '{build}'
 os: Visual Studio 2015
 configuration:
-    - Debug
-    - Release
+  - Debug
+  - Release
 platform: Any CPU
 environment:
-    CLI_VERSION: latest
-    DOTNET_CLI_TELEMETRY_OPTOUT: 1
-    DOTNET_SKIP_FIRST_TIME_EXPERIENCE: true
+  CLI_VERSION: latest
+  DOTNET_CLI_TELEMETRY_OPTOUT: 1
+  DOTNET_SKIP_FIRST_TIME_EXPERIENCE: true
 build_script:  
-    - ps: .\build.ps1
+  - ps: .\build.ps1
 deploy:  
-    - provider: NuGet
-        api_key:
-            secure: mj0BtY16CsWT3mvEQvUAm5VpRVCdkmjGtEfyzjrMZMKYJ/Izy7waJhlAgmLtpi4I
+  - provider: NuGet
+    api_key:
+      secure: mj0BtY16CsWT3mvEQvUAm5VpRVCdkmjGtEfyzjrMZMKYJ/Izy7waJhlAgmLtpi4I
