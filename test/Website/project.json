@@ -5,7 +5,9 @@
     "preserveCompilationContext": true
   },
   "dependencies": {
-    "AspNetCore.Configuration.Consul": "*",
+    "AspNetCore.Configuration.Consul": {
+      "target": "project"
+    },
     "Microsoft.NETCore.App": {
       "type": "platform",
       "version": "1.0.1"
