@@ -1,6 +1,7 @@
 # Asp.Net Core Consul Configuration
 
-[![Build Status](https://travis-ci.org/Choc13/AspNetCore.Configuration.Consul.svg?branch=master)](https://travis-ci.org/Choc13/AspNetCore.Configuration.Consul)
+[![Appveyor Build Status](https://ci.appveyor.com/api/projects/status/aspnetcore-configuration-consul/branch/master?svg=true)](https://ci.appveyor.com/api/projects/status/aspnetcore-configuration-consul/branch/master?svg=true)
+[![Travis Build Status](https://travis-ci.org/Choc13/AspNetCore.Configuration.Consul.svg?branch=master)](https://travis-ci.org/Choc13/AspNetCore.Configuration.Consul)
 
 Adds support for configuring Asp.Net Core application using Consul. It is expected that the configuration will be stored as a single object under a given key in Consul. Works great with [git2consul](https://github.com/Cimpress-MCP/git2consul).
 
