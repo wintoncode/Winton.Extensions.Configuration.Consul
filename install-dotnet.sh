@@ -46,3 +46,6 @@ fi
 
 # We just use KoreBuild to install the dotnet cli
 $dotnetInstallFile
+
+# Reload the path variable to pick up changes after installation
+source ~/.bashrc
