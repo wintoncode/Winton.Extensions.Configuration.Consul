@@ -1,9 +1,4 @@
 version: '{build}'
-os: Visual Studio 2015
-configuration:
-  - Debug
-  - Release
-platform: Any CPU
 environment:
   CLI_VERSION: latest
   DOTNET_CLI_TELEMETRY_OPTOUT: 1
