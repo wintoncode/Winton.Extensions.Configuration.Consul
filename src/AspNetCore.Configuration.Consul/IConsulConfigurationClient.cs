@@ -6,7 +6,7 @@ namespace Chocolate.AspNetCore.Configuration.Consul
 {
     internal interface IConsulConfigurationClient
     {
-        Task<byte[]> GetConfig(bool optional);
+        Task<IConfigQueryResult> GetConfig();
 
         IChangeToken Watch(Action<ConsulWatchExceptionContext> onException);
     }

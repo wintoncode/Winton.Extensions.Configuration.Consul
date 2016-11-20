@@ -23,11 +23,11 @@ namespace Chocolate.AspNetCore.Configuration.Consul
             _source = source;
         }
 
-        public async Task<byte[]> GetConfig(bool optional)
+        public async Task<IConfigQueryResult> GetConfig()
         {
-            var result = await GetKVPair(optional);
+            var result = await GetKVPair();
             UpdateLastIndex(result);
-            return result?.Response?.Value;
+            return new ConfigQueryResult(result);
         }
 
         public IChangeToken Watch(Action<ConsulWatchExceptionContext> onException)
@@ -36,7 +36,7 @@ namespace Chocolate.AspNetCore.Configuration.Consul
             return _reloadToken;
         }
 
-        private async Task<QueryResult<KVPair>> GetKVPair(bool optional, QueryOptions queryOptions = null)
+        private async Task<QueryResult<KVPair>> GetKVPair(QueryOptions queryOptions = null)
         {
             using (IConsulClient consulClient = _consulClientFactory.Create())
             {
@@ -44,13 +44,8 @@ namespace Chocolate.AspNetCore.Configuration.Consul
                 switch (result.StatusCode)
                 {
                     case HttpStatusCode.OK:
-                        return result;
                     case HttpStatusCode.NotFound:
-                        if (optional) 
-                        {
-                            return result;
-                        }
-                        throw new Exception($"The configuration for key {_source.Key} was not found and is not optional.");
+                        return result;
                     default:
                         throw new Exception($"Error loading configuration from consul. Status code: {result.StatusCode}.");
                 }
@@ -85,7 +80,7 @@ namespace Chocolate.AspNetCore.Configuration.Consul
             {
                 queryOptions = new QueryOptions { WaitIndex = _lastIndex };
             }
-            var result = await GetKVPair(true, queryOptions);
+            var result = await GetKVPair(queryOptions);
             return result != null && UpdateLastIndex(result);
         }
 

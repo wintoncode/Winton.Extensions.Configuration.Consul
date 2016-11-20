@@ -49,32 +49,51 @@ namespace Chocolate.AspNetCore.Configuration.Consul
         {
             try
             {
-                bool optional = _source.Optional || reloading;
-                byte[] configBytes = await _consulConfigClient.GetConfig(optional);
-                LoadIntoMemory(configBytes);
+                IConfigQueryResult configQueryResult = await _consulConfigClient.GetConfig();
+                if (!configQueryResult.Exists && !_source.Optional)
+                {
+                    if (!reloading)
+                    {
+                        throw new Exception($"The configuration for key {_source.Key} was not found and is not optional.");
+                    }
+                    else
+                    {
+                        // Don't overwrite mandatory config with empty data if not found when reloading
+                        return;
+                    }
+                } 
+                LoadIntoMemory(configQueryResult);
             }
             catch(Exception exception)
             {
-                var exceptionContext = new ConsulLoadExceptionContext(_source, exception);
-                _source.OnLoadException?.Invoke(exceptionContext);
-                if (!exceptionContext.Ignore)
-                {
-                    throw exception;
-                }
+                HandleLoadException(exception);
             }
         }
 
-        private void LoadIntoMemory(byte[] configBytes)
+        private void LoadIntoMemory(IConfigQueryResult configQueryResult)
         {
-            if (configBytes == null)
+            if (!configQueryResult.Exists)
             {
                 Data = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
                 return;
             }
-            using (var configStream = new MemoryStream(configBytes))
+            else
             {
-                IDictionary<string, string> parsedData = _source.Parser.Parse(configStream);
-                Data = new Dictionary<string, string>(parsedData, StringComparer.OrdinalIgnoreCase);
+                using (var configStream = new MemoryStream(configQueryResult.Value))
+                {
+                    IDictionary<string, string> parsedData = _source.Parser.Parse(configStream);
+                    Data = new Dictionary<string, string>(parsedData, StringComparer.OrdinalIgnoreCase);
+                }
+            }
+        }
+
+        private void HandleLoadException(Exception exception)
+        {
+            var exceptionContext = new ConsulLoadExceptionContext(_source, exception);
+            _source.OnLoadException?.Invoke(exceptionContext);
+            if (!exceptionContext.Ignore)
+            {
+                throw exception;
             }
         }
     }
