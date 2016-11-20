@@ -5,6 +5,7 @@ environment:
   DOTNET_SKIP_FIRST_TIME_EXPERIENCE: true
 build_script:  
   - ps: .\build.ps1
+test: off
 deploy:  
   - provider: NuGet
     api_key:
