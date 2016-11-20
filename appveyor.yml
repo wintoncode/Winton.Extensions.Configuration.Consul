@@ -12,5 +12,5 @@ build_script:
     - ps: .\build.ps1
 deploy:  
     - provider: NuGet
-    api_key:
+    - api_key:
         secure: mj0BtY16CsWT3mvEQvUAm5VpRVCdkmjGtEfyzjrMZMKYJ/Izy7waJhlAgmLtpi4I
