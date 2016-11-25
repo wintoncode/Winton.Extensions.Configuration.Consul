@@ -18,7 +18,7 @@ namespace Chocolate.AspNetCore.Configuration.Consul
         /// either loading or watching via long polling.
         /// It is recommended that this is cancelled during shut down.
         /// </summary>
-        CancellationToken CancellationToken { get; set; }
+        CancellationToken CancellationToken { get; }
 
         /// <summary>
         /// An <see cref="Action"/> to be applied to the <see cref="ConsulClientConfiguration"/> 

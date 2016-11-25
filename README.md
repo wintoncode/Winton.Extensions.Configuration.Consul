@@ -16,14 +16,29 @@ Add `AspNetCore.Configuration.Consul` to the `dependencies` section of your proj
 Add the following to your `StartUp` class for the minimal setup:
 
 ```csharp
+var cancellationTokenSource = new cancellationTokenSource();
 var builder = new ConfigurationBuilder()
-    .AddConsul($"{env.ApplicationName}.{env.EnvironmentName}");
+    .AddConsul(
+        $"{env.ApplicationName}.{env.EnvironmentName}",
+        cancellationTokenSource.Token);
 Configuration = builder.Build();
 ```
 
 Assuming the application is running in the development environment and the application name is Website, this will load a json configuration object from the key `Website/Development` in Consul.
 
-Or specify an options `Action` as a second argument to set the options specified below.
+The `CancellationToken` is used to cancel any current requests or watches with Consul.
+It is recommended that this is cancelled during application shut down to clean up resources. This can be done like so:
+
+```csharp
+public void Configure(IApplicationBuilder app, IHostingEnvironment env, IApplicationLifetime appLifetime)
+{
+    // Other app configuration
+
+    appLifetime.ApplicationStopping.Register(_canellationTokenSource.Cancel);
+}
+```
+
+An options `Action` can be specified as a third argument to set the options outlined below.
 
 ## Configuration Options
 * **`ConsulConfigurationOptions`**
@@ -38,6 +53,9 @@ Or specify an options `Action` as a second argument to set the options specified
 * **`OnLoadException`**
 
    An `Action` that can be used to configure how exceptions should be handled during load
+* **`OnLoadException`**
+
+   An `Action` that can be used to configure how exceptions should be handled that are thrown when watching for changes
 * **`Optional`**
 
    A `bool` that indicates whether the config is optional. If `false` then will throw during load if the config is missing for the given key.
@@ -50,5 +68,4 @@ Or specify an options `Action` as a second argument to set the options specified
 
 ## Backlog
 * Add more parsers for different file formats
-* Add support for reloading the configuration when it changes.
 * Add support for expanded configuration where the configuration is a tree of KV pairs under the root key

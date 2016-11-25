@@ -22,7 +22,7 @@ namespace Chocolate.AspNetCore.Configuration.Consul
             Parser = new JsonConfigurationParser();
         }
 
-        public CancellationToken CancellationToken { get; set; }
+        public CancellationToken CancellationToken { get; }
 
         public Action<ConsulClientConfiguration> ConsulConfigurationOptions { get; set; }
 
