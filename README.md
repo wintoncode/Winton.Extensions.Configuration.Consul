@@ -64,7 +64,8 @@ An options `Action` can be specified as a third argument to set the options outl
    The parser to use, should match the format of the configuration stored in Consul. Defaults to `JsonConfigurationParser`. Either use those under `Chocolate.AspNetCore.Configuration.Consul.Parsers` or create your own by implementing `IConfigurationParser`.
 * **`ReloadOnChange`**
 
-   A `bool` indicating whether to reload the config when it changes in Consul. *NOT CURRENTLY SUPPORTED*
+   A `bool` indicating whether to reload the config when it changes in Consul.
+   If `true` it will watch the configured key for changes and then reload the config asynchronously and trigger the `IChangeToken` to raise the event that the config has been reloaded.
 
 ## Backlog
 * Add more parsers for different file formats
