@@ -2,7 +2,6 @@ using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
-using System.Threading.Tasks;
 using Chocolate.AspNetCore.Configuration.Consul.Parsers;
 using Microsoft.Extensions.Primitives;
 using Moq;
@@ -32,19 +31,22 @@ namespace Chocolate.AspNetCore.Configuration.Consul
             _consulConfigSourceMock.SetupGet(ccs => ccs.Key).Returns(_Key);
             _consulConfigSourceMock.SetupGet(ccs => ccs.Optional).Returns(false);
             _consulConfigSourceMock.SetupGet(ccs => ccs.ReloadOnChange).Returns(false);
-            _consulConfigSourceMock.SetupGet(ccs => ccs.OnLoadException).Returns((Action<ConsulLoadExceptionContext>)null);
-            _consulConfigSourceMock.SetupGet(ccs => ccs.OnWatchException).Returns((Action<ConsulWatchExceptionContext>)null);
+            _consulConfigSourceMock.SetupGet(ccs => ccs.OnLoadException).Returns(null);
+            _consulConfigSourceMock.SetupGet(ccs => ccs.OnWatchException).Returns(null);
 
             _changeTokenMock = new Mock<IChangeToken>(MockBehavior.Strict);
             _configQueryResultMock = new Mock<IConfigQueryResult>(MockBehavior.Strict);
 
             _consulConfigClientMock = new Mock<IConsulConfigurationClient>(MockBehavior.Strict);
-            _consulConfigClientMock.Setup(ccc => ccc.GetConfig()).Returns(Task.FromResult(_configQueryResultMock.Object));
+            _consulConfigClientMock
+                .Setup(ccc => ccc.GetConfig())
+                .ReturnsAsync(_configQueryResultMock.Object);
             _consulConfigClientMock
                 .Setup(ccc => ccc.Watch(_consulConfigSourceMock.Object.OnWatchException))
                 .Returns(_changeTokenMock.Object);
 
-            _consulConfigProvider = new ConsulConfigurationProvider(_consulConfigSourceMock.Object, _consulConfigClientMock.Object);
+            _consulConfigProvider =
+                new ConsulConfigurationProvider(_consulConfigSourceMock.Object, _consulConfigClientMock.Object);
         }
 
         [Test]
@@ -82,7 +84,7 @@ namespace Chocolate.AspNetCore.Configuration.Consul
             _consulConfigProvider.Load();
 
             Assert.That(
-                _consulConfigProvider.GetChildKeys(Enumerable.Empty<string>(), ""),
+                _consulConfigProvider.GetChildKeys(Enumerable.Empty<string>(), string.Empty),
                 Is.EqualTo(Enumerable.Empty<string>()).AsCollection);
         }
 
@@ -94,7 +96,9 @@ namespace Chocolate.AspNetCore.Configuration.Consul
             
             _consulConfigProvider.Load();
 
-            Assert.That(() => _configParserMock.Verify(cp => cp.Parse(It.IsAny<MemoryStream>()), Times.Never), Throws.Nothing);
+            Assert.That(
+                () => _configParserMock.Verify(cp => cp.Parse(It.IsAny<MemoryStream>()), Times.Never),
+                Throws.Nothing);
         }
 
         [Test]
@@ -104,15 +108,19 @@ namespace Chocolate.AspNetCore.Configuration.Consul
             _consulConfigSourceMock.SetupGet(ccs => ccs.Optional).Returns(false);
             _configQueryResultMock.Setup(cqr => cqr.Exists).Returns(false);
 
-            _consulConfigSourceMock.SetupGet(ccs => ccs.OnLoadException).Returns(exceptionContext => {
-                actualExceptionContext = exceptionContext;
-            });
+            _consulConfigSourceMock
+                .SetupGet(ccs => ccs.OnLoadException)
+                .Returns(exceptionContext =>
+                {
+                    actualExceptionContext = exceptionContext;
+                });
             
             try 
             {
                 _consulConfigProvider.Load();
             }
             catch {}
+
             Assert.That(
                 actualExceptionContext.Exception.Message,
                 Is.EqualTo($"The configuration for key {_Key} was not found and is not optional."));
@@ -122,13 +130,14 @@ namespace Chocolate.AspNetCore.Configuration.Consul
         public void ShouldCallSourceOnLoadExceptionActionWhenExceptionDuringLoad()
         {
             bool calledOnLoadException = false;
-            Exception exception = new Exception("Failed to load from Consul agent");
-            Task<IConfigQueryResult> faultedTask = Task.FromException<IConfigQueryResult>(exception);
             
-            _consulConfigClientMock.Setup(ccc => ccc.GetConfig()).Returns(faultedTask);
-            _consulConfigSourceMock.SetupGet(ccs => ccs.OnLoadException).Returns(exceptionContext => {
-                calledOnLoadException = true;
-            });
+            _consulConfigClientMock.Setup(ccc => ccc.GetConfig()).ThrowsAsync(new Exception());
+            _consulConfigSourceMock
+                .SetupGet(ccs => ccs.OnLoadException)
+                .Returns(exceptionContext =>
+                {
+                    calledOnLoadException = true;
+                });
             
             try
             {
@@ -143,52 +152,59 @@ namespace Chocolate.AspNetCore.Configuration.Consul
         public void ShouldSetExceptionInLoadExceptionContextWhenExceptionDuringLoad()
         {
             ConsulLoadExceptionContext actualExceptionContext = null;
-            Exception exception = new Exception("Failed to load from Consul agent");
-            Task<IConfigQueryResult> faultedTask = Task.FromException<IConfigQueryResult>(exception);
+            var expectedException = new Exception("Failed to load from Consul agent");
             
-            _consulConfigClientMock.Setup(ccc => ccc.GetConfig()).Returns(faultedTask);
-            _consulConfigSourceMock.SetupGet(ccs => ccs.OnLoadException).Returns(exceptionContext => {
-                actualExceptionContext = exceptionContext;
-            });
+            _consulConfigClientMock.Setup(ccc => ccc.GetConfig()).ThrowsAsync(expectedException);
+            _consulConfigSourceMock
+                .SetupGet(ccs => ccs.OnLoadException)
+                .Returns(exceptionContext => 
+                {
+                    actualExceptionContext = exceptionContext;
+                });
             
             try 
             {
                 _consulConfigProvider.Load();
             }
             catch {}
-            Assert.That(actualExceptionContext.Exception, Is.SameAs(exception));
+
+            Assert.That(actualExceptionContext.Exception, Is.SameAs(expectedException));
         }
 
          [Test]
         public void ShouldSetSourceInLoadExceptionContextWhenExceptionDuringLoad()
         {
             ConsulLoadExceptionContext actualExceptionContext = null;
-            Exception exception = new Exception("Failed to load from Consul agent");
-            Task<IConfigQueryResult> faultedTask = Task.FromException<IConfigQueryResult>(exception);
             
-            _consulConfigClientMock.Setup(ccc => ccc.GetConfig()).Returns(faultedTask);
-            _consulConfigSourceMock.SetupGet(ccs => ccs.OnLoadException).Returns(exceptionContext => {
-                actualExceptionContext = exceptionContext;
-            });
+            _consulConfigClientMock.Setup(ccc => ccc.GetConfig()).ThrowsAsync(new Exception());
+            _consulConfigSourceMock
+                .SetupGet(ccs => ccs.OnLoadException)
+                .Returns(exceptionContext =>
+                {
+                    actualExceptionContext = exceptionContext;
+                });
             
             try 
             {
                 _consulConfigProvider.Load();
             }
             catch {}
+
             Assert.That(actualExceptionContext.Source, Is.SameAs(_consulConfigSourceMock.Object));
         }
 
         [Test]
         public void ShouldThrowExceptionIfOnLoadExceptionDoesNotSetIgnoreWhenExceptionDuringLoad()
         {
-            Exception exception = new Exception("Failed to load from Consul agent");
-            Task<IConfigQueryResult> faultedTask = Task.FromException<IConfigQueryResult>(exception);
+            var exception = new Exception("Failed to load from Consul agent");
             
-            _consulConfigClientMock.Setup(ccc => ccc.GetConfig()).Returns(faultedTask);
-            _consulConfigSourceMock.SetupGet(ccs => ccs.OnLoadException).Returns(exceptionContext => {
-                exceptionContext.Ignore = false;
-            });
+            _consulConfigClientMock.Setup(ccc => ccc.GetConfig()).ThrowsAsync(exception);
+            _consulConfigSourceMock
+                .SetupGet(ccs => ccs.OnLoadException)
+                .Returns(exceptionContext =>
+                {
+                    exceptionContext.Ignore = false;
+                });
 
             Assert.That(() => _consulConfigProvider.Load(), Throws.Exception.SameAs(exception));
         }
@@ -196,13 +212,15 @@ namespace Chocolate.AspNetCore.Configuration.Consul
         [Test]
         public void ShouldNotThrowExceptionIfOnLoadExceptionDoesSetIgnoreWhenExceptionDuringLoad()
         {
-            Exception exception = new Exception("Failed to load from Consul agent");
-            Task<IConfigQueryResult> faultedTask = Task.FromException<IConfigQueryResult>(exception);
+            var exception = new Exception("Failed to load from Consul agent");
             
-            _consulConfigClientMock.Setup(ccc => ccc.GetConfig()).Returns(faultedTask);
-            _consulConfigSourceMock.SetupGet(ccs => ccs.OnLoadException).Returns(exceptionContext => {
-                exceptionContext.Ignore = true;
-            });
+            _consulConfigClientMock.Setup(ccc => ccc.GetConfig()).ThrowsAsync(exception);
+            _consulConfigSourceMock
+                .SetupGet(ccs => ccs.OnLoadException)
+                .Returns(exceptionContext =>
+                {
+                    exceptionContext.Ignore = true;
+                });
 
             Assert.That(() => _consulConfigProvider.Load(), Throws.Nothing);
         }
@@ -211,9 +229,12 @@ namespace Chocolate.AspNetCore.Configuration.Consul
         public void ShouldWatchForChangesIfSourceReloadOnChangesIsTrue()
         {
             _consulConfigSourceMock.SetupGet(ccs => ccs.ReloadOnChange).Returns(true);
-            _changeTokenMock.Setup(ct => ct.RegisterChangeCallback(It.IsAny<Action<object>>(), It.IsAny<object>())).Returns((IDisposable)null);
+            _changeTokenMock
+                .Setup(ct => ct.RegisterChangeCallback(It.IsAny<Action<object>>(), It.IsAny<object>()))
+                .Returns(null as IDisposable);
 
-            var configProvider = new ConsulConfigurationProvider(_consulConfigSourceMock.Object, _consulConfigClientMock.Object);
+            var configProvider =
+                new ConsulConfigurationProvider(_consulConfigSourceMock.Object, _consulConfigClientMock.Object);
 
             Assert.That(
                 () => _consulConfigClientMock.Verify(ccs => ccs.Watch(_consulConfigSourceMock.Object.OnWatchException)),
@@ -228,12 +249,14 @@ namespace Chocolate.AspNetCore.Configuration.Consul
             _configQueryResultMock.SetupGet(cqr => cqr.Exists).Returns(false);
             _changeTokenMock
                 .Setup(ct => ct.RegisterChangeCallback(It.IsAny<Action<object>>(), It.IsAny<object>()))
-                .Callback((Action<object> action, object state) => {
+                .Callback((Action<object> action, object state) =>
+                {
                     onChangeAction = action;
                 })
-                .Returns((IDisposable)null);
+                .Returns(null as IDisposable);
 
-            var configProvider = new ConsulConfigurationProvider(_consulConfigSourceMock.Object, _consulConfigClientMock.Object);
+            var configProvider =
+                new ConsulConfigurationProvider(_consulConfigSourceMock.Object, _consulConfigClientMock.Object);
 
             onChangeAction(null);
 
@@ -251,12 +274,14 @@ namespace Chocolate.AspNetCore.Configuration.Consul
             _configQueryResultMock.SetupGet(cqr => cqr.Exists).Returns(false);
             _changeTokenMock
                 .Setup(ct => ct.RegisterChangeCallback(It.IsAny<Action<object>>(), It.IsAny<object>()))
-                .Callback((Action<object> action, object state) => {
+                .Callback((Action<object> action, object state) =>
+                {
                     onChangeAction = action;
                 })
-                .Returns((IDisposable)null);
+                .Returns(null as IDisposable);
 
-            var configProvider = new ConsulConfigurationProvider(_consulConfigSourceMock.Object, _consulConfigClientMock.Object);
+            var configProvider =
+                new ConsulConfigurationProvider(_consulConfigSourceMock.Object, _consulConfigClientMock.Object);
 
             Assert.That(() => onChangeAction(null), Throws.Nothing);
         }
@@ -274,10 +299,11 @@ namespace Chocolate.AspNetCore.Configuration.Consul
             _configQueryResultMock.SetupGet(cqr => cqr.Exists).Returns(false);
             _changeTokenMock
                 .Setup(ct => ct.RegisterChangeCallback(It.IsAny<Action<object>>(), It.IsAny<object>()))
-                .Callback((Action<object> action, object state) => {
+                .Callback((Action<object> action, object state) =>
+                {
                     onChangeAction = action;
                 })
-                .Returns((IDisposable)null);
+                .Returns(null as IDisposable);
 
             var configProvider = new ConsulConfigurationProvider(_consulConfigSourceMock.Object, _consulConfigClientMock.Object);
 

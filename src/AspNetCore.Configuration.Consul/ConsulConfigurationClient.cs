@@ -52,13 +52,13 @@ namespace Chocolate.AspNetCore.Configuration.Consul
             }
         }
 
-        private void PollForChanges(Action<ConsulWatchExceptionContext> onException)
+        private async Task PollForChanges(Action<ConsulWatchExceptionContext> onException)
         {
             while (!_source.CancellationToken.IsCancellationRequested)
             {
                 try
                 {
-                    if (HasValueChanged().Result)
+                    if (await HasValueChanged())
                     {
                         var previousToken = Interlocked.Exchange(ref _reloadToken, new ConfigurationReloadToken());
                         previousToken.OnReload();
