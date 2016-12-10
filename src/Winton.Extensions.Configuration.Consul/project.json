@@ -1,0 +1,47 @@
+{
+  "buildOptions": {
+    "outputName": "Winton.Extensions.Configuration.Consul",
+    "warningsAsErrors": true,
+    "xmlDoc": true
+  },
+  "dependencies": {
+    "Consul": "0.7.0.3",
+    "Microsoft.Extensions.Configuration.Abstractions": "1.0.0",
+    "Microsoft.Extensions.Configuration.Json": "1.0.0",
+    "Microsoft.Extensions.DependencyInjection.Abstractions": "1.0.0"
+  },
+  "description": "Provides support for configuring .Net Core applications with Consul",
+  "frameworks": {
+    "net451": {},
+    "netstandard1.3": {}
+  },
+  "name": "Winton.Extensions.Configuration.Consul",
+  "packOptions": {
+    "repository": {
+      "type": "git",
+      "url": "https://github.com/wintoncode/Winton.Extensions.Configuration.Consul"
+    },
+    "tags": [
+      ".Net",
+      ".Net Core",
+      "dotnetcore",
+      "Asp.Net",
+      "Asp.Net Core",
+      "aspnetcore",
+      "configuration",
+      "consul",
+      "winton",
+      "wintoncode"
+    ]
+  },
+  "title": "Winton.Extensions.Configuration.Consul",
+  "tools": {
+    "dotnet-gitversion": {
+      "version": "*",
+      "imports": [
+        "dotnet"
+      ]
+    }
+  },
+  "version": "0.1.0-master0055"
+}

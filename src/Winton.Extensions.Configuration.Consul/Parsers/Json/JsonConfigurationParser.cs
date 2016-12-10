@@ -1,0 +1,25 @@
+using System.Collections.Generic;
+using System.IO;
+using Newtonsoft.Json;
+using Newtonsoft.Json.Linq;
+
+namespace Winton.Extensions.Configuration.Consul.Parsers.Json
+{
+    /// <summary>
+    /// Implemenation of <see cref="IConfigurationParser"/> for parsing JSON Configuration
+    /// </summary>
+    public sealed class JsonConfigurationParser : IConfigurationParser
+    {
+        /// <inheritdoc/>
+        public IDictionary<string, string> Parse(Stream stream)
+        {
+            using (var streamReader = new StreamReader(stream))
+            using (var jsonReader = new JsonTextReader(new StreamReader(stream)))
+            {
+                jsonReader.DateParseHandling = DateParseHandling.None;
+                JObject jsonConfig = JObject.Load(jsonReader);
+                return jsonConfig.Flatten();
+            }
+        }
+    }
+}

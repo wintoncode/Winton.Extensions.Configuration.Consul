@@ -5,9 +5,6 @@
     "preserveCompilationContext": true
   },
   "dependencies": {
-    "AspNetCore.Configuration.Consul": {
-      "target": "project"
-    },
     "Microsoft.NETCore.App": {
       "type": "platform",
       "version": "1.0.1"
@@ -19,7 +16,10 @@
     "Microsoft.Extensions.Logging": "1.0.0",
     "Microsoft.Extensions.Logging.Console": "1.0.0",
     "Microsoft.Extensions.Logging.Debug": "1.0.0",
-    "Swashbuckle": "6.0.0-beta902"
+    "Swashbuckle": "6.0.0-beta902",
+    "Winton.Extensions.Configuration.Consul": {
+      "target": "project"
+    }
   },
   "frameworks": {
     "netcoreapp1.0": {
@@ -41,6 +41,6 @@
     }
   },
   "tooling": {
-    "defaultNamespace": "AspNetCore.Configuration.Consul.Website"
+    "defaultNamespace": "Winton.Extensions.Configuration.Consul.Website"
   }
 }

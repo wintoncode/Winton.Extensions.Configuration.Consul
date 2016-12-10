@@ -1,7 +1,7 @@
 using System.IO;
 using Microsoft.AspNetCore.Hosting;
 
-namespace WebApplication
+namespace Winton.Extensions.Configuration.Consul.Website
 {
     public class Program
     {

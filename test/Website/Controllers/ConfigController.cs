@@ -2,7 +2,7 @@ using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Configuration;
 
-namespace WebApplication.Controllers
+namespace Winton.Extensions.Configuration.Consul.Website.Controllers
 {
     [Route("[controller]")]
     public sealed class ConfigController : Controller

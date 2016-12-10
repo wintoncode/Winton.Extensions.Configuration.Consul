@@ -1,12 +1,12 @@
 using System.Threading;
-using Chocolate.AspNetCore.Configuration.Consul;
+using Winton.Extensions.Configuration.Consul;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 
-namespace WebApplication
+namespace Winton.Extensions.Configuration.Consul.Website
 {
     public class Startup
     {
