@@ -9,3 +9,7 @@ test: off
 artifacts:  
 - path: .\**\*.nupkg
   name: NuGet
+deploy:  
+- provider: NuGet
+  api_key:
+    secure: CxMH3k6k/Rpz1zjToGDAelLWDT/gDqRo08iEUAQsRnL+WRo+4TL5gLiNEUy/GfUy
