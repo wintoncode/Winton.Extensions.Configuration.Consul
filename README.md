@@ -1,15 +1,15 @@
-# Asp.Net Core Consul Configuration
+# Winton.Extensions.Configuration.Consul
 
-[![Build status](https://ci.appveyor.com/api/projects/status/rfttyjwt2p4nswpf/branch/master?svg=true)](https://ci.appveyor.com/project/Choc13/aspnetcore-configuration-consul/branch/master)
-[![Travis Build Status](https://travis-ci.org/Choc13/AspNetCore.Configuration.Consul.svg?branch=master)](https://travis-ci.org/Choc13/AspNetCore.Configuration.Consul)
-[![NuGet version](https://img.shields.io/nuget/v/AspNetCore.Configuration.Consul.svg)](https://www.nuget.org/packages/AspNetCore.Configuration.Consul)
-[![NuGet version](https://img.shields.io/nuget/vpre/AspNetCore.Configuration.Consul.svg)](https://www.nuget.org/packages/AspNetCore.Configuration.Consul)
+[![Build status](https://ci.appveyor.com/api/projects/status/vlouj9n5ahqsgql9/branch/master?svg=true)](https://ci.appveyor.com/project/wintoncode/winton-extensions-configuration-consul/branch/master)
+[![Travis Build Status](https://travis-ci.org/wintoncode/Winton.Extensions.Configuration.Consul.svg?branch=master)](https://travis-ci.org/wintoncode/Winton.Extensions.Configuration.Consul)
+[![NuGet version](https://img.shields.io/nuget/v/Winton.Extensions.Configuration.Consul.svg)](https://www.nuget.org/packages/Winton.Extensions.Configuration.Consul)
+[![NuGet version](https://img.shields.io/nuget/vpre/Winton.Extensions.Configuration.Consul.svg)](https://www.nuget.org/packages/Winton.Extensions.Configuration.Consul)
 
-Adds support for configuring Asp.Net Core application using Consul. It is expected that the configuration will be stored as a single object under a given key in Consul. Works great with [git2consul](https://github.com/Cimpress-MCP/git2consul).
+Adds support for configuring .Net Core application using Consul. It is expected that the configuration will be stored as a single object under a given key in Consul. Works great with [git2consul](https://github.com/Cimpress-MCP/git2consul).
 
 ## Installation
 
-Add `AspNetCore.Configuration.Consul` to the `dependencies` section of your project.json
+Add `Winton.Extensions.Configuration.Consul` to the `dependencies` section of your project.json
 
 ## Usage
 
@@ -61,7 +61,7 @@ An options `Action` can be specified as a third argument to set the options outl
    A `bool` that indicates whether the config is optional. If `false` then will throw during load if the config is missing for the given key.
 * **`Parser`**
 
-   The parser to use, should match the format of the configuration stored in Consul. Defaults to `JsonConfigurationParser`. Either use those under `Chocolate.AspNetCore.Configuration.Consul.Parsers` or create your own by implementing `IConfigurationParser`.
+   The parser to use, should match the format of the configuration stored in Consul. Defaults to `JsonConfigurationParser`. Either use those under `Winton.Extensions.Configuration.Consul.Parsers` or create your own by implementing `IConfigurationParser`.
 * **`ReloadOnChange`**
 
    A `bool` indicating whether to reload the config when it changes in Consul.

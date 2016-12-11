@@ -1,5 +1,5 @@
 dotnet restore
-cd src/AspNetCore.Configuration.Consul
+cd src/Winton.Extensions.Configuration.Consul
 dotnet gitversion
 cd ../../
 dotnet build src/*/project.json test/*/project.json --configuration Release
