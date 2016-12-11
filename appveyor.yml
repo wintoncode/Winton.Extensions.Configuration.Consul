@@ -17,4 +17,3 @@ deploy:
     secure: CxMH3k6k/Rpz1zjToGDAelLWDT/gDqRo08iEUAQsRnL+WRo+4TL5gLiNEUy/GfUy
   on:
     branch: master
-    configuration: release
