@@ -1,6 +1,6 @@
 # Taken from psake https://github.com/psake/psake and modified
 param(
-    [Parameter(Position = 0, Mandatory = False)][bool]$VersionAndPublish = True
+    [Parameter(Position=0, Mandatory=False)][bool]$VersionAndPublish = True
 )
 
 <#  
@@ -16,8 +16,8 @@ function Exec
 {
     [CmdletBinding()]
     param(
-        [Parameter(Position = 0, Mandatory = True)][scriptblock]$cmd,
-        [Parameter(Position = 1, Mandatory = False)][string]$errorMessage = ($msgs.error_bad_command -f $cmd)
+        [Parameter(Position=0, Mandatory=True)][scriptblock]$cmd,
+        [Parameter(Position=1, Mandatory=False)][string]$errorMessage = ($msgs.error_bad_command -f $cmd)
     )
     & $cmd
     if ($lastexitcode -ne 0)
