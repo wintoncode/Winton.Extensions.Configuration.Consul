@@ -4,7 +4,7 @@ environment:
   DOTNET_CLI_TELEMETRY_OPTOUT: 1
   DOTNET_SKIP_FIRST_TIME_EXPERIENCE: true
 build_script:
-  - ps: .\build.ps1 -VersionAndPublish ($env:APPVEYOR_PULL_REQUEST_NUMBER -eq '')
+  - ps: .\build.ps1 -VersionAndPublish (-Not $env:APPVEYOR_PULL_REQUEST_NUMBER)
 test: off
 artifacts:  
 - path: .\**\*.nupkg
