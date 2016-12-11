@@ -1,4 +1,7 @@
-# Taken from psake https://github.com/psake/psake
+# Taken from psake https://github.com/psake/psake and modified
+param(
+    [Parameter(Position = 0, Mandatory = False)][bool]$VersionAndPublish = True
+)
 
 <#  
 .SYNOPSIS
@@ -13,19 +16,26 @@ function Exec
 {
     [CmdletBinding()]
     param(
-        [Parameter(Position=0,Mandatory=1)][scriptblock]$cmd,
-        [Parameter(Position=1,Mandatory=0)][string]$errorMessage = ($msgs.error_bad_command -f $cmd)
+        [Parameter(Position = 0, Mandatory = True)][scriptblock]$cmd,
+        [Parameter(Position = 1, Mandatory = False)][string]$errorMessage = ($msgs.error_bad_command -f $cmd)
     )
     & $cmd
-    if ($lastexitcode -ne 0) {
+    if ($lastexitcode -ne 0)
+    {
         throw ("Exec: " + $errorMessage)
     }
 }
 
 exec { & dotnet restore }
 cd src\Winton.Extensions.Configuration.Consul
-exec { & dotnet gitversion }
+if ($VersionAndPublish)
+{
+    exec { & dotnet gitversion }
+}
 cd ..\..\
 exec { & dotnet build src\*\project.json test\*\project.json --configuration Release }
 exec { & dotnet test --no-build --configuration Release -f netcoreapp1.0 test\Winton.Extensions.Configuration.Consul.Test\project.json }
-exec { & dotnet pack --no-build src\Winton.Extensions.Configuration.Consul\project.json --configuration Release }
+if ($VersionAndPublish)
+{
+    exec { & dotnet pack --no-build src\Winton.Extensions.Configuration.Consul\project.json --configuration Release }
+}
