@@ -7,6 +7,14 @@
       "documentInternalElements": false,
       "xmlHeader": false
     },
+    "maintainabilityRules": {
+      "topLevelTypes": [
+        "class",
+        "enum",
+        "interface",
+        "struct"
+      ]
+    },
     "orderingRules": {
       "blankLinesBetweenUsingGroups": "omit",
       "usingDirectivesPlacement": "outsideNamespace"
