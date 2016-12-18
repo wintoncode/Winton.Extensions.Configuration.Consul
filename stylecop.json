@@ -1,0 +1,15 @@
+{
+  "$schema": "https://raw.githubusercontent.com/DotNetAnalyzers/StyleCopAnalyzers/1.1.0-beta001/StyleCop.Analyzers/StyleCop.Analyzers/Settings/stylecop.schema.json",
+  "settings": {
+    "documentationRules": {
+      "companyName": "Winton",
+      "copyrightText": "Copyright (c) {companyName}. All rights reserved.\nLicensed under the Apache License, Version 2.0. See LICENCE.md in the project root for license information.",
+      "documentInternalElements": false,
+      "xmlHeader": false
+    },
+    "orderingRules": {
+      "blankLinesBetweenUsingGroups": "omit",
+      "usingDirectivesPlacement": "outsideNamespace"
+    }
+  }
+}

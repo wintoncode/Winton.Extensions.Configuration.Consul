@@ -1,10 +1,13 @@
+// Copyright (c) Winton. All rights reserved.
+// Licensed under the Apache License, Version 2.0. See LICENCE.md in the project root for license information.
+
 using System;
 using System.Net.Http;
 using System.Threading;
-using Winton.Extensions.Configuration.Consul.Parsers;
-using Winton.Extensions.Configuration.Consul.Parsers.Json;
 using Consul;
 using Microsoft.Extensions.Configuration;
+using Winton.Extensions.Configuration.Consul.Parsers;
+using Winton.Extensions.Configuration.Consul.Parsers.Json;
 
 namespace Winton.Extensions.Configuration.Consul
 {
@@ -14,64 +17,64 @@ namespace Winton.Extensions.Configuration.Consul
     public interface IConsulConfigurationSource : IConfigurationSource
     {
         /// <summary>
-        /// A <see cref="CancellationToken"/> that can be used to cancel any consul requests
+        /// Gets a <see cref="CancellationToken"/> that can be used to cancel any consul requests
         /// either loading or watching via long polling.
         /// It is recommended that this is cancelled during shut down.
         /// </summary>
         CancellationToken CancellationToken { get; }
 
         /// <summary>
-        /// An <see cref="Action"/> to be applied to the <see cref="ConsulClientConfiguration"/> 
+        /// Gets or sets an <see cref="Action"/> to be applied to the <see cref="ConsulClientConfiguration"/>
         /// during construction of the <see cref="IConsulClient"/>.
         /// Allows the default config options for Consul to be overriden.
         /// </summary>
         Action<ConsulClientConfiguration> ConsulConfigurationOptions { get; set; }
 
         /// <summary>
-        /// An <see cref="Action"/> to be applied to the <see cref="HttpClient"/> during 
+        /// Gets or sets an <see cref="Action"/> to be applied to the <see cref="HttpClient"/> during
         /// construction of the <see cref="IConsulClient"/>.
         /// Allows the default HTTP client options for Consul to be overriden.
         /// </summary>
         Action<HttpClient> ConsulHttpClientOptions { get; set; }
 
         /// <summary>
-        /// An <see cref="Action"/> to be applied to the <see cref="HttpClientHandler"/> 
+        /// Gets or sets an <see cref="Action"/> to be applied to the <see cref="HttpClientHandler"/>
         /// during construction of the <see cref="IConsulClient"/>.
         /// Allows the default HTTP client hander options for Consul to be overriden.
         /// </summary>
         Action<HttpClientHandler> ConsulHttpClientHandlerOptions { get; set; }
 
         /// <summary>
-        /// The key in Consul where the configuration is located.
+        /// Gets the key in Consul where the configuration is located.
         /// </summary>
         string Key { get; }
 
         /// <summary>
-        /// An <see cref="Action"/> that is invoked when an exception is raised during config load.
+        /// Gets or sets an <see cref="Action"/> that is invoked when an exception is raised during config load.
         /// Used by clients to handle the exception if possible and prevent it from being thrown.
         /// </summary>
         Action<ConsulLoadExceptionContext> OnLoadException { get; set; }
 
         /// <summary>
-        /// An <see cref="Action"/> that is invoked when an exception is raised whilst watching.
+        /// Gets or sets an <see cref="Action"/> that is invoked when an exception is raised whilst watching.
         /// Used by clients to acknowledge the excetion and possibly cancel the watcher.
         /// </summary>
         Action<ConsulWatchExceptionContext> OnWatchException { get; set; }
 
         /// <summary>
-        /// Determines if loading the config is optional.
+        /// Gets or sets a value indicating whether the config is optional.
         /// </summary>
         bool Optional { get; set; }
 
         /// <summary>
-        /// The <see cref="IConfigurationParser"/> to use when parsing the config.
+        /// Gets or sets the <see cref="IConfigurationParser"/> to use when parsing the config.
         /// Allows different data formats to be stored in consul under the given key.
         /// Defaults to <see cref="JsonConfigurationParser"/>.
         /// </summary>
         IConfigurationParser Parser { get; set; }
 
         /// <summary>
-        /// Determines whether the source will be loaded if the data in consul changes.
+        /// Gets or sets a value indicating whether the source will be reloaded if the data in consul changes.
         /// </summary>
         bool ReloadOnChange { get; set; }
     }

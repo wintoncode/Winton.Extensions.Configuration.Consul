@@ -1,3 +1,6 @@
+// Copyright (c) Winton. All rights reserved.
+// Licensed under the Apache License, Version 2.0. See LICENCE.md in the project root for license information.
+
 using System;
 using System.Threading;
 using Microsoft.Extensions.Configuration;
@@ -5,7 +8,7 @@ using Microsoft.Extensions.Configuration;
 namespace Winton.Extensions.Configuration.Consul
 {
     /// <summary>
-    /// Extensions for the <see cref="IConfigurationBuilder"/> that provide syntactic sugar for 
+    /// Extensions for the <see cref="IConfigurationBuilder"/> that provide syntactic sugar for
     /// using the <see cref="IConsulConfigurationSource"/>.
     /// </summary>
     public static class ConfigurationBuilderExtensions
@@ -20,7 +23,7 @@ namespace Winton.Extensions.Configuration.Consul
         /// <returns>The builder</returns>
         public static IConfigurationBuilder AddConsul(this IConfigurationBuilder builder, string key, CancellationToken cancellationToken)
         {
-            return builder.AddConsul(key, cancellationToken, options => {});
+            return builder.AddConsul(key, cancellationToken, options => { });
         }
 
         /// <summary>

@@ -1,3 +1,6 @@
+// Copyright (c) Winton. All rights reserved.
+// Licensed under the Apache License, Version 2.0. See LICENCE.md in the project root for license information.
+
 using System;
 using System.Threading;
 
@@ -15,12 +18,12 @@ namespace Winton.Extensions.Configuration.Consul
         }
 
         /// <summary>
-        /// The exception that occured in Load.
+        /// Gets the <see cref="Exception"/> that occured.
         /// </summary>
         public Exception Exception { get; }
 
         /// <summary>
-        /// The <see cref="IConsulConfigurationSource"/> of the provider that caused the exception.
+        /// Gets the <see cref="IConsulConfigurationSource"/> of the provider that caused the exception.
         /// Can be used to access the <see cref="CancellationToken"/> which can terminate the watcher.
         /// </summary>
         public IConsulConfigurationSource Source { get; }

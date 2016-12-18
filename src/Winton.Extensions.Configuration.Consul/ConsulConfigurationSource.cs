@@ -1,10 +1,13 @@
+// Copyright (c) Winton. All rights reserved.
+// Licensed under the Apache License, Version 2.0. See LICENCE.md in the project root for license information.
+
 using System;
 using System.Net.Http;
 using System.Threading;
-using Winton.Extensions.Configuration.Consul.Parsers;
-using Winton.Extensions.Configuration.Consul.Parsers.Json;
 using Consul;
 using Microsoft.Extensions.Configuration;
+using Winton.Extensions.Configuration.Consul.Parsers;
+using Winton.Extensions.Configuration.Consul.Parsers.Json;
 
 namespace Winton.Extensions.Configuration.Consul
 {
