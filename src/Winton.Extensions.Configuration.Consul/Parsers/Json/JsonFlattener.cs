@@ -1,3 +1,6 @@
+// Copyright (c) Winton. All rights reserved.
+// Licensed under the Apache License, Version 2.0. See LICENCE.md in the project root for license information.
+
 using System;
 using System.Collections.Generic;
 using Newtonsoft.Json.Linq;
@@ -16,8 +19,10 @@ namespace Winton.Extensions.Configuration.Consul.Parsers.Json
                 {
                     throw new FormatException($"Key {primitive.Key} is duplicated in json");
                 }
+
                 data.Add(primitive);
             }
+
             return data;
         }
     }

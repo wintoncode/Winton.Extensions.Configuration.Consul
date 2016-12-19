@@ -1,3 +1,6 @@
+// Copyright (c) Winton. All rights reserved.
+// Licensed under the Apache License, Version 2.0. See LICENCE.md in the project root for license information.
+
 using System;
 using System.Collections.Generic;
 using System.IO;
@@ -18,6 +21,7 @@ namespace Winton.Extensions.Configuration.Consul
             {
                 throw new ArgumentNullException(nameof(source.Parser));
             }
+
             _consulConfigClient = consulConfigClient;
             _source = source;
 
@@ -25,11 +29,11 @@ namespace Winton.Extensions.Configuration.Consul
             {
                 ChangeToken.OnChange(
                     () => _consulConfigClient.Watch(_source.OnWatchException),
-                    async () => {
+                    async () =>
+                    {
                         await DoLoad(reloading: true);
                         OnReload();
-                    }
-                );
+                    });
             }
         }
 
@@ -61,10 +65,11 @@ namespace Winton.Extensions.Configuration.Consul
                         // Don't overwrite mandatory config with empty data if not found when reloading
                         return;
                     }
-                } 
+                }
+
                 LoadIntoMemory(configQueryResult);
             }
-            catch(Exception exception)
+            catch (Exception exception)
             {
                 HandleLoadException(exception);
             }

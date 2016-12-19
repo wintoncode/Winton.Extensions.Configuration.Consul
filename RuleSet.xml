@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<RuleSet Name="WintonCode ruleset" ToolsVersion="12.0">
+  <Rules AnalyzerId="StyleCop.Analyzers"
+         RuleNamespace="StyleCop.Analyzers.ReadabilityRules">
+    <Rule Id="SA1101" Action="None" />
+  </Rules>
+  <Rules AnalyzerId="StyleCop.Analyzers"
+         RuleNamespace="StyleCop.Analyzers.NamingRules">
+    <Rule Id="SA1309" Action="None" />
+  </Rules>
+</RuleSet>

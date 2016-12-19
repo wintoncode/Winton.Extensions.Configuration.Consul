@@ -1,3 +1,6 @@
+// Copyright (c) Winton. All rights reserved.
+// Licensed under the Apache License, Version 2.0. See LICENCE.md in the project root for license information.
+
 using System;
 using System.Net;
 using System.Threading;
@@ -11,7 +14,7 @@ namespace Winton.Extensions.Configuration.Consul
     internal sealed class ConsulConfigurationClient : IConsulConfigurationClient
     {
         private readonly IConsulClientFactory _consulClientFactory;
-        private readonly Object _lastIndexLock = new Object();
+        private readonly object _lastIndexLock = new object();
         private readonly IConsulConfigurationSource _source;
 
         private ConfigurationReloadToken _reloadToken = new ConfigurationReloadToken();
@@ -80,6 +83,7 @@ namespace Winton.Extensions.Configuration.Consul
             {
                 queryOptions = new QueryOptions { WaitIndex = _lastIndex };
             }
+
             var result = await GetKVPair(queryOptions);
             return result != null && UpdateLastIndex(result);
         }
@@ -94,6 +98,7 @@ namespace Winton.Extensions.Configuration.Consul
                     return true;
                 }
             }
+
             return false;
         }
     }
