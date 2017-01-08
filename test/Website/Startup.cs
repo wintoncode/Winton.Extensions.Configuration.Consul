@@ -1,10 +1,10 @@
+using System;
 using System.Threading;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
-using Winton.Extensions.Configuration.Consul;
 
 namespace Winton.Extensions.Configuration.Consul.Website
 {
@@ -23,10 +23,17 @@ namespace Winton.Extensions.Configuration.Consul.Website
             var builder = new ConfigurationBuilder()
                 .SetBasePath(env.ContentRootPath)
                 .AddConsul(
-                    $"{env.ApplicationName}/{env.EnvironmentName}/appsettings.json", 
+                    $"appsettings.json", 
                     _consulConfigCancellationTokenSource.Token,
                     options => {
+                        options.ConsulConfigurationOptions = (cco) => {
+                            cco.Address = new Uri("http://consul:8500");
+                        };
+                        options.Optional = true;
                         options.ReloadOnChange = true;
+                        options.OnLoadException = (exceptionContext) => {
+                            exceptionContext.Ignore = true;
+                        };
                     })
                 .AddEnvironmentVariables();
             Configuration = builder.Build();

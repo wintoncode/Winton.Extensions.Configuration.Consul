@@ -43,6 +43,13 @@ namespace Winton.Extensions.Configuration.Consul
             _consulConfigurationClient = new ConsulConfigurationClient(_consulClientFactoryMock.Object, _consulConfigurationSourceMock.Object);
         }
 
+        [TearDown]
+        public void TearDown()
+        {
+            // Ensure any background threads that were started are stopped
+            _cancellationTokenSource.Cancel();
+        }
+
         [Test]
         public async Task ShouldGetConfigAtSpecifiedKey()
         {
@@ -93,15 +100,9 @@ namespace Winton.Extensions.Configuration.Consul
         }
 
         [Test]
-        public async Task ShouldUseLongPollingToPollForChangesWhenWatch()
+        public void ShouldUseLongPollingToPollForChangesWhenWatch()
         {
-            await SimulateConfigChange(1);
-
-            Assert.That(
-                () => _kvMock.Verify(
-                    kv => kv.Get(_Key, It.IsAny<QueryOptions>(), _cancellationToken),
-                    Times.Once), 
-                Throws.Nothing);
+            Assert.DoesNotThrowAsync(() => SimulateConfigChange(1));
         }
 
         [Test]
@@ -220,7 +221,6 @@ namespace Winton.Extensions.Configuration.Consul
             _kvMock
                 .Setup(kv => kv.Get(_Key, It.IsAny<QueryOptions>(), _cancellationToken))
                 .ReturnsAsync(result);
-            _consulClientMock.SetupGet(cc => cc.KV).Returns(_kvMock.Object);
 
             return await _consulConfigurationClient.GetConfig();
         }
@@ -228,18 +228,34 @@ namespace Winton.Extensions.Configuration.Consul
         private async Task<bool> SimulateConfigChange(ulong lastIndex)
         {
             var configChangedCompletion = new TaskCompletionSource<bool>();
+
+            // Initially setup mock with 0 last index so that no changes occur
             var result = new QueryResult<KVPair>
             {
-                LastIndex = lastIndex,
+                LastIndex = 0,
                 StatusCode = HttpStatusCode.OK
             };
             _kvMock
                 .Setup(kv => kv.Get(_Key, It.IsAny<QueryOptions>(), _cancellationToken))
                 .ReturnsAsync(result);
 
-            _consulConfigurationClient.Watch(null).RegisterChangeCallback(
-                o => configChangedCompletion.SetResult(true),
-                new object());
+            // Watch for changes
+            _consulConfigurationClient
+                .Watch(
+                    exceptionContext => 
+                    {
+                        _cancellationTokenSource.Cancel();
+                        configChangedCompletion.SetException(exceptionContext.Exception);
+                    })
+                .RegisterChangeCallback(
+                    o => configChangedCompletion.SetResult(true),
+                    new object());
+            
+            // Update mocked result to return a higher last index, which is what happens when changes occur
+            result.LastIndex = lastIndex;
+            _kvMock
+                .Setup(kv => kv.Get(_Key, It.IsAny<QueryOptions>(), _cancellationToken))
+                .ReturnsAsync(result);
 
             return await configChangedCompletion.Task;
         }
