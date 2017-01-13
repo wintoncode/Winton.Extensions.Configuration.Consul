@@ -16,6 +16,7 @@ env:
     - CLI_VERSION: latest
     - DOTNET_SKIP_FIRST_TIME_EXPERIENCE: true
     - DOTNET_CLI_TELEMETRY_OPTOUT: 1
+    - VERSION_AND_PUBLISH: if "$TRAVIS_PULL_REQUEST" 1= ""; then true
 mono:
   - 4.0.5
 dotnet: 1.0.0-preview2-003121
@@ -27,7 +28,7 @@ before_install:
   - if test "$TRAVIS_OS_NAME" == "osx"; then brew update; brew install openssl; ln -s /usr/local/opt/openssl/lib/libcrypto.1.0.0.dylib /usr/local/lib/; ln -s /usr/local/opt/openssl/lib/libssl.1.0.0.dylib /usr/local/lib/; fi
 script:
   - git fetch --unshallow
-  - ./build.sh --quiet verify
+  - if test "$TRAVIS_PULL_REQUEST"; then ./build.sh; else; ./build.sh -v; fi
 notifications:
   on_success: always
   on_failure: always
