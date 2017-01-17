@@ -12,3 +12,4 @@ test:
     - consul
     - website
   command: ["./wait-for-it.sh", "consul:8500", "--", "./wait-for-it.sh", "website:5000", "--", "bash", "test.sh"]
+  
