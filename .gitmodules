@@ -1,0 +1,3 @@
+[submodule "test/Website/IntegrationTests/wait-for-it"]
+	path = test/Website/IntegrationTests/wait-for-it
+	url = https://github.com/vishnubob/wait-for-it.git

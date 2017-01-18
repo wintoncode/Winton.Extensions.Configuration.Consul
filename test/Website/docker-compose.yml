@@ -1,0 +1,12 @@
+website:
+  build: .
+  dockerfile: Dockerfile
+  links:
+    - consul
+  ports:
+    - "80:5000"
+consul:
+  image: consul
+  ports:
+    - "8500:8500"
+    

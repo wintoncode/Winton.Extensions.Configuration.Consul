@@ -1,0 +1,15 @@
+consul:
+  image: consul
+website:
+  build: ../
+  dockerfile: Dockerfile
+  links:
+    - consul
+test:
+  build: .
+  dockerfile: Dockerfile.test
+  links:
+    - consul
+    - website
+  command: ["./wait-for-it.sh", "consul:8500", "--", "./wait-for-it.sh", "website:5000", "--", "bash", "test.sh"]
+  
