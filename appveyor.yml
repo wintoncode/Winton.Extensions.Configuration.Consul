@@ -7,7 +7,7 @@ skip_tags: true
 build_script:
   - ps: .\build.ps1 -VersionAndPublish (-Not $env:APPVEYOR_PULL_REQUEST_NUMBER)
 test: off
-artifacts:  
+artifacts:
 - path: .\**\*.nupkg
   name: NuGet
 nuget:
@@ -17,5 +17,6 @@ deploy:
   api_key:
     secure: CxMH3k6k/Rpz1zjToGDAelLWDT/gDqRo08iEUAQsRnL+WRo+4TL5gLiNEUy/GfUy
   on:
-    branch: master
-    branch: release
+    branch: 
+    - master
+    - release
