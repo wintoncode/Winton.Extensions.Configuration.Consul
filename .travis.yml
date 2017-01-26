@@ -1,5 +1,8 @@
 language: csharp
 sudo: required
+branches:
+  except:
+  - /^[0-9]/
 addons:
   apt:
     packages:
