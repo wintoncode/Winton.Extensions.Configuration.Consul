@@ -3,10 +3,11 @@ environment:
   CLI_VERSION: latest
   DOTNET_CLI_TELEMETRY_OPTOUT: 1
   DOTNET_SKIP_FIRST_TIME_EXPERIENCE: true
+skip_tags: true
 build_script:
   - ps: .\build.ps1 -VersionAndPublish (-Not $env:APPVEYOR_PULL_REQUEST_NUMBER)
 test: off
-artifacts:  
+artifacts:
 - path: .\**\*.nupkg
   name: NuGet
 nuget:
@@ -16,4 +17,6 @@ deploy:
   api_key:
     secure: CxMH3k6k/Rpz1zjToGDAelLWDT/gDqRo08iEUAQsRnL+WRo+4TL5gLiNEUy/GfUy
   on:
-    branch: master
+    branch: 
+    - master
+    - release
