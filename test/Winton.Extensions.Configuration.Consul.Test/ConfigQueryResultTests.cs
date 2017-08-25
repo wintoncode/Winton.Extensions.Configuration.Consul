@@ -18,7 +18,7 @@ namespace Winton.Extensions.Configuration.Consul
         [Test]
         public void ShouldSetExistsToFalseWhenConstructedFromResultWithNullResponse()
         {
-            QueryResult<KVPair> kvPairResult = new QueryResult<KVPair>
+            var kvPairResult = new QueryResult<KVPair>
             {
                 Response = null,
                 StatusCode = HttpStatusCode.OK
@@ -32,11 +32,11 @@ namespace Winton.Extensions.Configuration.Consul
         [Test]
         public void ShouldSetExistsToFalseWhenConstructedFromResultWithNullValue()
         {
-            QueryResult<KVPair> kvPairResult = new QueryResult<KVPair>
+            var kvPairResult = new QueryResult<KVPair>
             {
                 Response = new KVPair("Key")
                 {
-                    Value = null   
+                    Value = null
                 },
                 StatusCode = HttpStatusCode.OK
             };
@@ -49,11 +49,11 @@ namespace Winton.Extensions.Configuration.Consul
         [Test]
         public void ShouldSetExistsToFalseWhenConstructedFromResultWithEmptyValue()
         {
-            QueryResult<KVPair> kvPairResult = new QueryResult<KVPair>
+            var kvPairResult = new QueryResult<KVPair>
             {
                 Response = new KVPair("Key")
                 {
-                    Value = new byte[]{}
+                    Value = new byte[] { }
                 },
                 StatusCode = HttpStatusCode.OK
             };
@@ -66,7 +66,7 @@ namespace Winton.Extensions.Configuration.Consul
         [Test]
         public void ShouldSetExistsToFalseWhenConstructedFromResultWithNotFoundStatus()
         {
-            QueryResult<KVPair> kvPairResult = new QueryResult<KVPair>
+            var kvPairResult = new QueryResult<KVPair>
             {
                 StatusCode = HttpStatusCode.NotFound
             };
@@ -79,8 +79,8 @@ namespace Winton.Extensions.Configuration.Consul
         [Test]
         public void ShouldSetValueToResultValue()
         {
-            var actualValue = new byte[]{1};
-            QueryResult<KVPair> kvPairResult = new QueryResult<KVPair>
+            var actualValue = new byte[] { 1 };
+            var kvPairResult = new QueryResult<KVPair>
             {
                 Response = new KVPair("Key")
                 {

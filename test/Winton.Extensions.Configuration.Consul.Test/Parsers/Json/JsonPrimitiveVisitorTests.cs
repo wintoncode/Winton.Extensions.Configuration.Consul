@@ -17,13 +17,12 @@ namespace Winton.Extensions.Configuration.Consul.Parsers.Json
         {
             const string key = "Test";
             var property = new JProperty(key, new JValue(value));
-            var jObject = new JObject();
-            jObject.Add(property);
+            var jObject = new JObject { property };
 
             var visitor = new JsonPrimitiveVisitor();
 
             var expectedPrimitive = new KeyValuePair<string, string>(key, value.ToString());
-            ICollection<KeyValuePair<string, string>> expectedPrimitives = new [] {expectedPrimitive};
+            ICollection<KeyValuePair<string, string>> expectedPrimitives = new[] { expectedPrimitive };
             Assert.That(visitor.VisitJObject(jObject).ToList(), Is.EqualTo(expectedPrimitives).AsCollection);
         }
 
@@ -34,17 +33,14 @@ namespace Winton.Extensions.Configuration.Consul.Parsers.Json
             const string childKey = "Child";
             const string value = "primitive";
             var jObject = new JObject(
-                new JProperty(parentKey,
-                    new JObject(
-                        new JProperty(childKey, new JValue(value))
-                    )
-                )
-            );
+                new JProperty(
+                    parentKey,
+                    new JObject(new JProperty(childKey, new JValue(value)))));
 
             var visitor = new JsonPrimitiveVisitor();
 
-            var expectedPrimitive = new KeyValuePair<string, string>(parentKey, value.ToString());
-            ICollection<KeyValuePair<string, string>> expectedPrimitives = new []
+            var expectedPrimitive = new KeyValuePair<string, string>(parentKey, value);
+            ICollection<KeyValuePair<string, string>> expectedPrimitives = new[]
                 {
                     new KeyValuePair<string, string>($"{parentKey}:{childKey}", value)
                 };
@@ -58,17 +54,15 @@ namespace Winton.Extensions.Configuration.Consul.Parsers.Json
             const string firstValue = "First";
             const string secondValue = "Second";
             var jObject = new JObject(
-                new JProperty(key,
+                new JProperty(
+                    key,
                     new JArray(
                         new JValue(firstValue),
-                        new JValue(secondValue)
-                    )
-                )
-            );
+                        new JValue(secondValue))));
 
             var visitor = new JsonPrimitiveVisitor();
 
-            ICollection<KeyValuePair<string, string>> expectedPrimitives = new []
+            ICollection<KeyValuePair<string, string>> expectedPrimitives = new[]
                 {
                     new KeyValuePair<string, string>($"{key}:0", firstValue),
                     new KeyValuePair<string, string>($"{key}:1", secondValue)
@@ -83,18 +77,15 @@ namespace Winton.Extensions.Configuration.Consul.Parsers.Json
             const string nestedObjectKey = "ObjectInArray";
             const int value = 1;
             var jObject = new JObject(
-                new JProperty(key,
+                new JProperty(
+                    key,
                     new JArray(
                         new JObject(
-                            new JProperty(nestedObjectKey, value)
-                        )
-                    )
-                )
-            );
+                            new JProperty(nestedObjectKey, value)))));
 
             var visitor = new JsonPrimitiveVisitor();
 
-            ICollection<KeyValuePair<string, string>> expectedPrimitives = new []
+            ICollection<KeyValuePair<string, string>> expectedPrimitives = new[]
                 {
                     new KeyValuePair<string, string>($"{key}:0:{nestedObjectKey}", value.ToString()),
                 };

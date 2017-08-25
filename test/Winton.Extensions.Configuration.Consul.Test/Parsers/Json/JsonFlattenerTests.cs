@@ -12,12 +12,10 @@ namespace Winton.Extensions.Configuration.Consul.Parsers.Json
         {
             const string key = "Key";
             const string value = "Value";
-            var jObject = new JObject(
-                new JProperty(key, new JValue(value))
-            );
+            var jObject = new JObject(new JProperty(key, new JValue(value)));
 
             var flattenedObject = jObject.Flatten();
-            
+
             Assert.That(flattenedObject.ContainsKey(key.ToUpper()));
             Assert.That(flattenedObject.ContainsKey(key.ToLower()));
             Assert.That(flattenedObject[key], Is.EqualTo(value));
@@ -30,8 +28,7 @@ namespace Winton.Extensions.Configuration.Consul.Parsers.Json
             const string value = "Value";
             var jObject = new JObject(
                 new JProperty(key.ToUpper(), new JValue(value)),
-                new JProperty(key.ToLower(), new JValue(value))
-            );
+                new JProperty(key.ToLower(), new JValue(value)));
 
             Assert.That(() => jObject.Flatten(), Throws.TypeOf<FormatException>());
         }

@@ -1,4 +1,7 @@
-workDir="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
-dotnet publish $workDir --configuration Release
-(cd $workDir && docker-compose rm -f)
-docker-compose -f $workDir/docker-compose.yml up --build --force-recreate
+#! /bin/bash
+
+pushd $( dirname $0 )
+dotnet publish --configuration Release
+docker-compose rm -f
+docker-compose -f docker-compose.yml up --build --force-recreate
+popd
