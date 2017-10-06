@@ -6,12 +6,16 @@ environment:
 image: Visual Studio 2017
 configuration:
     - Release
+skip_tags: true
 before_build:
     - dotnet restore
 build_script:
     - msbuild /p:GetVersion=True /p:WriteVersionInfoToBuildLog=True
 test_script:
-    - dotnet test test/Winton.Extensions.Configuration.Consul.Test/Winton.Extensions.Configuration.Consul.Test.csproj --no-build --configuration Release
+    - dotnet test test/Winton.Extensions.Configuration.Consul.Test/ --no-build --configuration Release
+artifacts:
+- path: .\**\*.nupkg
+  name: NuGet
 nuget:
   disable_publish_on_pr: true 
 deploy:

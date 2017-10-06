@@ -9,9 +9,7 @@ dotnet restore
 dotnet build --configuration Release
 
 # Unit Test
-pushd test/Winton.Extensions.Configuration.Consul.Test
-dotnet test --no-build --configuration Release
-popd
+dotnet test test/Winton.Extensions.Configuration.Consul.Test/ --no-build --configuration Release
 
 # Integration test
 if hash docker 2>/dev/null; then
