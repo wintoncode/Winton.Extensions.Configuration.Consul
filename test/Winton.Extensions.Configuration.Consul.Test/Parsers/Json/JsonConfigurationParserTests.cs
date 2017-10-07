@@ -20,8 +20,8 @@ namespace Winton.Extensions.Configuration.Consul.Parsers.Json
         public void ShouldParseSimpleJsonFromStream()
         {
             const string key = "Key";
-            const string value = "Value"; 
-            string json = $"{{\"{key}\": \"{value}\"}}";
+            const string value = "Value";
+            var json = $"{{\"{key}\": \"{value}\"}}";
             using (Stream stream = new MemoryStream(Encoding.UTF8.GetBytes(json)))
             {
                 var result = _parser.Parse(stream);
@@ -34,8 +34,8 @@ namespace Winton.Extensions.Configuration.Consul.Parsers.Json
         {
             const string parentKey = "parentKey";
             const string childKey = "childKey";
-            const string value = "Value"; 
-            string json = $"{{\"{parentKey}\": {{\"{childKey}\": \"{value}\"}} }}";
+            const string value = "Value";
+            var json = $"{{\"{parentKey}\": {{\"{childKey}\": \"{value}\"}} }}";
             using (Stream stream = new MemoryStream(Encoding.UTF8.GetBytes(json)))
             {
                 var result = _parser.Parse(stream);

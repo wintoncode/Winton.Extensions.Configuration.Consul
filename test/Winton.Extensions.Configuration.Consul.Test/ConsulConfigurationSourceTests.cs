@@ -12,7 +12,7 @@ namespace Winton.Extensions.Configuration.Consul
         public void ShouldSetKeyInConstructor()
         {
             const string key = "Key";
-            var source = new ConsulConfigurationSource(key, new CancellationToken());
+            var source = new ConsulConfigurationSource(key, CancellationToken.None);
 
             Assert.That(source.Key, Is.EqualTo(key));
         }
@@ -21,7 +21,7 @@ namespace Winton.Extensions.Configuration.Consul
         public void ShouldThrowIfKeyIsNullWhenConstructed()
         {
             Assert.That(
-                () => new ConsulConfigurationSource(null, new CancellationToken()), 
+                () => new ConsulConfigurationSource(null, CancellationToken.None),
                 Throws.TypeOf<ArgumentNullException>()
                     .And.Message.Contains("key"));
         }
@@ -30,7 +30,7 @@ namespace Winton.Extensions.Configuration.Consul
         public void ShouldThrowIfKeyIsWhitespaceWhenConstructed()
         {
             Assert.That(
-                () => new ConsulConfigurationSource("   ", new CancellationToken()), 
+                () => new ConsulConfigurationSource("   ", CancellationToken.None),
                 Throws.TypeOf<ArgumentNullException>()
                     .And.Message.Contains("key"));
         }
@@ -38,7 +38,7 @@ namespace Winton.Extensions.Configuration.Consul
         [Test]
         public void ShouldSetCancellationTokensInConstructor()
         {
-            var cancellationToken = new CancellationToken();
+            var cancellationToken = CancellationToken.None;
             var source = new ConsulConfigurationSource("Key", cancellationToken);
 
             Assert.That(source.CancellationToken, Is.EqualTo(cancellationToken));
@@ -47,7 +47,7 @@ namespace Winton.Extensions.Configuration.Consul
         [Test]
         public void ShouldHaveJsonConfgurationParserByDefault()
         {
-            var source = new ConsulConfigurationSource("Key", new CancellationToken());
+            var source = new ConsulConfigurationSource("Key", CancellationToken.None);
 
             Assert.That(source.Parser, Is.TypeOf<JsonConfigurationParser>());
         }
@@ -55,7 +55,7 @@ namespace Winton.Extensions.Configuration.Consul
         [Test]
         public void ShouldSetOptionalToFalseByDefault()
         {
-            var source = new ConsulConfigurationSource("Key", new CancellationToken());
+            var source = new ConsulConfigurationSource("Key", CancellationToken.None);
 
             Assert.That(source.Optional, Is.False);
         }
@@ -63,7 +63,7 @@ namespace Winton.Extensions.Configuration.Consul
         [Test]
         public void ShouldSetReloadOnChangeToFalseByDefault()
         {
-            var source = new ConsulConfigurationSource("Key", new CancellationToken());
+            var source = new ConsulConfigurationSource("Key", CancellationToken.None);
 
             Assert.That(source.ReloadOnChange, Is.False);
         }

@@ -1,0 +1,55 @@
+﻿
+Microsoft Visual Studio Solution File, Format Version 12.00
+# Visual Studio 15
+VisualStudioVersion = 15.0.26430.14
+MinimumVisualStudioVersion = 10.0.40219.1
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Solution Items", "Solution Items", "{92E73150-9357-4AA6-8C7D-E43709B27A6D}"
+	ProjectSection(SolutionItems) = preProject
+		.travis.yml = .travis.yml
+		appveyor.yml = appveyor.yml
+		build.sh = build.sh
+		CONTRIBUTING.md = CONTRIBUTING.md
+		GitVersionConfig.yaml = GitVersionConfig.yaml
+		LICENSE = LICENSE
+		README.md = README.md
+		stylecop.json = stylecop.json
+	EndProjectSection
+EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "src", "src", "{03739F78-2460-4F1E-92F2-807CBD8C8AB5}"
+EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "test", "test", "{972A51CA-2686-4B9B-8BBB-503B2A1BA630}"
+EndProject
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Winton.Extensions.Configuration.Consul", "src\Winton.Extensions.Configuration.Consul\Winton.Extensions.Configuration.Consul.csproj", "{B5C08CE5-B60B-485F-B78F-A119B8AA8508}"
+EndProject
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Winton.Extensions.Configuration.Consul.Test", "test\Winton.Extensions.Configuration.Consul.Test\Winton.Extensions.Configuration.Consul.Test.csproj", "{6A8821FC-BE1A-4EC8-8A51-73105458CC85}"
+EndProject
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Website", "test\Website\Website.csproj", "{44386D3A-3926-410D-AAD6-3820E17D712A}"
+EndProject
+Global
+	GlobalSection(SolutionConfigurationPlatforms) = preSolution
+		Debug|Any CPU = Debug|Any CPU
+		Release|Any CPU = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(ProjectConfigurationPlatforms) = postSolution
+		{B5C08CE5-B60B-485F-B78F-A119B8AA8508}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{B5C08CE5-B60B-485F-B78F-A119B8AA8508}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{B5C08CE5-B60B-485F-B78F-A119B8AA8508}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{B5C08CE5-B60B-485F-B78F-A119B8AA8508}.Release|Any CPU.Build.0 = Release|Any CPU
+		{6A8821FC-BE1A-4EC8-8A51-73105458CC85}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{6A8821FC-BE1A-4EC8-8A51-73105458CC85}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{6A8821FC-BE1A-4EC8-8A51-73105458CC85}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{6A8821FC-BE1A-4EC8-8A51-73105458CC85}.Release|Any CPU.Build.0 = Release|Any CPU
+		{44386D3A-3926-410D-AAD6-3820E17D712A}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{44386D3A-3926-410D-AAD6-3820E17D712A}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{44386D3A-3926-410D-AAD6-3820E17D712A}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{44386D3A-3926-410D-AAD6-3820E17D712A}.Release|Any CPU.Build.0 = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(SolutionProperties) = preSolution
+		HideSolutionNode = FALSE
+	EndGlobalSection
+	GlobalSection(NestedProjects) = preSolution
+		{B5C08CE5-B60B-485F-B78F-A119B8AA8508} = {03739F78-2460-4F1E-92F2-807CBD8C8AB5}
+		{6A8821FC-BE1A-4EC8-8A51-73105458CC85} = {972A51CA-2686-4B9B-8BBB-503B2A1BA630}
+		{44386D3A-3926-410D-AAD6-3820E17D712A} = {972A51CA-2686-4B9B-8BBB-503B2A1BA630}
+	EndGlobalSection
+EndGlobal

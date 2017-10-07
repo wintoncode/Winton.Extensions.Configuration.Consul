@@ -109,7 +109,7 @@ namespace Winton.Extensions.Configuration.Consul
         public async Task ShouldUseLongPollingWithLatestIndexFromGetWhenWatch()
         {
             ulong lastWaitIndex = 0;
-            ulong lastIndex = 1;
+            const ulong lastIndex = 1;
             var completion = new TaskCompletionSource<bool>();
 
             // Get config once which should update the latest index
@@ -126,7 +126,7 @@ namespace Winton.Extensions.Configuration.Consul
             };
             _kvMock
                 .Setup(kv => kv.Get(_Key, It.IsAny<QueryOptions>(), _cancellationToken))
-                .Callback((string key, QueryOptions options, CancellationToken cancellationToken) => 
+                .Callback((string key, QueryOptions options, CancellationToken cancellationToken) =>
                 {
                     lastWaitIndex = options.WaitIndex;
                 })
@@ -145,7 +145,7 @@ namespace Winton.Extensions.Configuration.Consul
         public async Task ShouldUseLongPollingWithWaitIndexFromPreviousWatchWhenWatch()
         {
             ulong lastWaitIndex = 0;
-            ulong lastIndex = 1;
+            const ulong lastIndex = 1;
             var completion = new TaskCompletionSource<bool>();
 
             // Simulate the first change in config which generates a new index
@@ -158,7 +158,7 @@ namespace Winton.Extensions.Configuration.Consul
             };
             _kvMock
                 .Setup(kv => kv.Get(_Key, It.IsAny<QueryOptions>(), _cancellationToken))
-                .Callback((string key, QueryOptions options, CancellationToken cancellationToken) => 
+                .Callback((string key, QueryOptions options, CancellationToken cancellationToken) =>
                 {
                     lastWaitIndex = options.WaitIndex;
                 })
@@ -199,12 +199,12 @@ namespace Winton.Extensions.Configuration.Consul
             Exception actualException = null;
             Exception expectedException = new Exception();
             var configChangedCompletion = new TaskCompletionSource<bool>();
-            
+
             _kvMock
                 .Setup(kv => kv.Get(_Key, It.IsAny<QueryOptions>(), _cancellationToken))
                 .ThrowsAsync(expectedException);
 
-            _consulConfigurationClient.Watch(exceptionContext => 
+            _consulConfigurationClient.Watch(exceptionContext =>
             {
                 actualException = exceptionContext.Exception;
                 _cancellationTokenSource.Cancel();
@@ -242,7 +242,7 @@ namespace Winton.Extensions.Configuration.Consul
             // Watch for changes
             _consulConfigurationClient
                 .Watch(
-                    exceptionContext => 
+                    exceptionContext =>
                     {
                         _cancellationTokenSource.Cancel();
                         configChangedCompletion.SetException(exceptionContext.Exception);
@@ -250,7 +250,7 @@ namespace Winton.Extensions.Configuration.Consul
                 .RegisterChangeCallback(
                     o => configChangedCompletion.SetResult(true),
                     new object());
-            
+
             // Update mocked result to return a higher last index, which is what happens when changes occur
             result.LastIndex = lastIndex;
             _kvMock

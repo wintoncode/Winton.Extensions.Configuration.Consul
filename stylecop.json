@@ -1,5 +1,5 @@
 {
-  "$schema": "https://raw.githubusercontent.com/DotNetAnalyzers/StyleCopAnalyzers/1.1.0-beta001/StyleCop.Analyzers/StyleCop.Analyzers/Settings/stylecop.schema.json",
+  "$schema": "https://raw.githubusercontent.com/DotNetAnalyzers/StyleCopAnalyzers/1.0.2/StyleCop.Analyzers/StyleCop.Analyzers/Settings/stylecop.schema.json",
   "settings": {
     "documentationRules": {
       "companyName": "Winton",

@@ -10,6 +10,7 @@ namespace Winton.Extensions.Configuration.Consul.Website
             var host = new WebHostBuilder()
                 .UseKestrel()
                 .UseContentRoot(Directory.GetCurrentDirectory())
+                .UseIISIntegration()
                 .UseStartup<Startup>()
                 .Build();
 

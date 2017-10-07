@@ -3,20 +3,26 @@ environment:
   CLI_VERSION: latest
   DOTNET_CLI_TELEMETRY_OPTOUT: 1
   DOTNET_SKIP_FIRST_TIME_EXPERIENCE: true
+image: Visual Studio 2017
+configuration:
+    - Release
 skip_tags: true
+before_build:
+    - dotnet restore
 build_script:
-  - ps: .\build.ps1 -VersionAndPublish (-Not $env:APPVEYOR_PULL_REQUEST_NUMBER)
-test: off
+    - msbuild /p:GetVersion=True /p:WriteVersionInfoToBuildLog=True
+test_script:
+    - dotnet test test/Winton.Extensions.Configuration.Consul.Test/ --no-build --configuration Release
 artifacts:
 - path: .\**\*.nupkg
   name: NuGet
 nuget:
   disable_publish_on_pr: true 
-deploy:  
+deploy:
 - provider: NuGet
   api_key:
     secure: CxMH3k6k/Rpz1zjToGDAelLWDT/gDqRo08iEUAQsRnL+WRo+4TL5gLiNEUy/GfUy
   on:
-    branch: 
+    branch:
     - master
     - /release\/[0-9]\.[0-9]/

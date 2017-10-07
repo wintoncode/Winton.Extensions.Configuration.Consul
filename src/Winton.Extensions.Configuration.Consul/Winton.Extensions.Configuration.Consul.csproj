@@ -1,0 +1,38 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <Copyright>Copyright (c) Winton</Copyright>
+    <Description>Provides support for configuring .Net Core applications with Consul</Description>
+    <GenerateDocumentationFile>True</GenerateDocumentationFile>
+    <GetVersion>False</GetVersion>
+    <NoWarn>$(NoWarn);SA1101;SA1309;SA1413</NoWarn>
+    <PackageId>Winton.Extensions.Configuration.Consul</PackageId>
+    <PackageLicenseUrl>https://github.com/wintoncode/Winton.Extensions.Configuration.Consul/blob/master/LICENSE</PackageLicenseUrl>
+    <PackageRequireLicenseAcceptance>True</PackageRequireLicenseAcceptance>
+    <PackageTags>.Net;.Net Core;dotnetcore;Asp.Net;Asp.Net Core;aspnetcore;configuration;consul;winton;wintoncode</PackageTags>
+    <PackageVersion>$(NuGetVersion)</PackageVersion>
+    <RepositoryType>git</RepositoryType>
+    <RepositoryUrl>https://github.com/wintoncode/Winton.Extensions.Configuration.Consul</RepositoryUrl>
+    <TargetFrameworks>netstandard1.3</TargetFrameworks>
+    <TreatWarningsAsErrors>True</TreatWarningsAsErrors>
+    <WriteVersionInfoToBuildLog>False</WriteVersionInfoToBuildLog>
+  </PropertyGroup>
+
+  <PropertyGroup Condition="'$(Configuration)' == 'Release'">
+    <GeneratePackageOnBuild>True</GeneratePackageOnBuild>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <AdditionalFiles Include="../../stylecop.json" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Consul" Version="0.7.0.3" />
+    <PackageReference Include="GitVersionTask" Version="4.0.0-beta0011" PrivateAssets="All" />
+    <PackageReference Include="Microsoft.Extensions.Configuration" Version="1.0.2" />
+    <PackageReference Include="Newtonsoft.Json" Version="9.0.1" />
+    <PackageReference Include="StyleCop.Analyzers" Version="1.0.2" PrivateAssets="All" />
+  </ItemGroup>
+
+</Project>
+  

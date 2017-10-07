@@ -1,36 +1,24 @@
 language: csharp
-sudo: required
 branches:
   except:
   - /^[0-9]/
-addons:
-  apt:
-    packages:
-    - gettext
-    - libcurl4-openssl-dev
-    - libicu-dev
-    - libssl-dev
-    - libunwind8
-    - zlib1g
 services:
   - docker
 env:
   global:
-    - CLI_VERSION: latest
     - DOTNET_SKIP_FIRST_TIME_EXPERIENCE: true
     - DOTNET_CLI_TELEMETRY_OPTOUT: 1
-mono:
-  - 4.0.5
-dotnet: 1.0.0-preview2-003121
-os:
-  - linux
-  - osx
-osx_image: xcode7.3
-before_install:
-  - if test "$TRAVIS_OS_NAME" == "osx"; then brew update; brew install openssl; ln -s -f /usr/local/opt/openssl/lib/libcrypto.1.0.0.dylib /usr/local/lib/; ln -s -f /usr/local/opt/openssl/lib/libssl.1.0.0.dylib /usr/local/lib/; fi
+matrix:
+  include:
+    - os: linux
+      sudo: required
+      dotnet: 2.0.0
+    - os: osx 
+      osx_image: xcode9 # OSX 10.12
+      dotnet: 2.0.0
 script:
   - git fetch --unshallow
-  - if test "$TRAVIS_PULL_REQUEST" == "false"; then ./build.sh -v; else ./build.sh; fi
+  - ./build.sh
 notifications:
   on_success: always
   on_failure: always
