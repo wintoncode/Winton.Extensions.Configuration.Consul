@@ -16,6 +16,8 @@ matrix:
     - os: osx 
       osx_image: xcode9 # OSX 10.12
       dotnet: 2.0.0
+      before_install:
+        - ulimit -n 4096
 script:
   - git fetch --unshallow
   - ./build.sh
