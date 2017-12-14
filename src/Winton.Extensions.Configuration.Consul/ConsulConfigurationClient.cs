@@ -28,7 +28,7 @@ namespace Winton.Extensions.Configuration.Consul
 
         public async Task<IConfigQueryResult> GetConfig()
         {
-            var result = await GetKVPair();
+            var result = await GetKVPair().ConfigureAwait(false);
             UpdateLastIndex(result);
             return new ConfigQueryResult(result);
         }
@@ -43,7 +43,8 @@ namespace Winton.Extensions.Configuration.Consul
         {
             using (IConsulClient consulClient = _consulClientFactory.Create())
             {
-                QueryResult<KVPair> result = await consulClient.KV.Get(_source.Key, queryOptions, _source.CancellationToken);
+                QueryResult<KVPair> result = await consulClient.KV.Get(_source.Key, queryOptions, _source.CancellationToken)
+                    .ConfigureAwait(false);
                 switch (result.StatusCode)
                 {
                     case HttpStatusCode.OK:
@@ -61,7 +62,7 @@ namespace Winton.Extensions.Configuration.Consul
             {
                 try
                 {
-                    if (await HasValueChanged())
+                    if (await HasValueChanged().ConfigureAwait(false))
                     {
                         var previousToken = Interlocked.Exchange(ref _reloadToken, new ConfigurationReloadToken());
                         previousToken.OnReload();
@@ -84,7 +85,7 @@ namespace Winton.Extensions.Configuration.Consul
                 queryOptions = new QueryOptions { WaitIndex = _lastIndex };
             }
 
-            var result = await GetKVPair(queryOptions);
+            var result = await GetKVPair(queryOptions).ConfigureAwait(false);
             return result != null && UpdateLastIndex(result);
         }
 

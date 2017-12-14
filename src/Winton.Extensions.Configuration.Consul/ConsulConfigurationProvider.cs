@@ -31,7 +31,7 @@ namespace Winton.Extensions.Configuration.Consul
                     () => _consulConfigClient.Watch(_source.OnWatchException),
                     async () =>
                     {
-                        await DoLoad(reloading: true);
+                        await DoLoad(reloading: true).ConfigureAwait(false);
                         OnReload();
                     });
             }
@@ -53,7 +53,7 @@ namespace Winton.Extensions.Configuration.Consul
         {
             try
             {
-                IConfigQueryResult configQueryResult = await _consulConfigClient.GetConfig();
+                IConfigQueryResult configQueryResult = await _consulConfigClient.GetConfig().ConfigureAwait(false);
                 if (!configQueryResult.Exists && !_source.Optional)
                 {
                     if (!reloading)
