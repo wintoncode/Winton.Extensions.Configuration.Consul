@@ -29,14 +29,14 @@ namespace Winton.Extensions.Configuration.Consul
             _cancellationToken = _cancellationTokenSource.Token;
 
             _consulConfigurationSourceMock = new Mock<IConsulConfigurationSource>(MockBehavior.Strict);
-            _consulConfigurationSourceMock.SetupGet(ccs => ccs.CancellationToken).Returns(_cancellationToken);
-            _consulConfigurationSourceMock.SetupGet(ccs => ccs.Key).Returns(_Key);
+            _consulConfigurationSourceMock.Setup(ccs => ccs.CancellationToken).Returns(_cancellationToken);
+            _consulConfigurationSourceMock.Setup(ccs => ccs.Key).Returns(_Key);
 
             _kvMock = new Mock<IKVEndpoint>(MockBehavior.Strict);
 
             _consulClientMock = new Mock<IConsulClient>(MockBehavior.Strict);
             _consulClientMock.Setup(cc => cc.Dispose());
-            _consulClientMock.SetupGet(cc => cc.KV).Returns(_kvMock.Object);
+            _consulClientMock.Setup(cc => cc.KV).Returns(_kvMock.Object);
             _consulClientFactoryMock = new Mock<IConsulClientFactory>(MockBehavior.Strict);
             _consulClientFactoryMock.Setup(ccf => ccf.Create()).Returns(_consulClientMock.Object);
 

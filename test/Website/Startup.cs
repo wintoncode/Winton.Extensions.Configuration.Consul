@@ -5,6 +5,7 @@ using Microsoft.AspNetCore.Hosting;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
+using Swashbuckle.AspNetCore.Swagger;
 
 namespace Winton.Extensions.Configuration.Consul.Website
 {
@@ -44,9 +45,12 @@ namespace Winton.Extensions.Configuration.Consul.Website
         public void ConfigureServices(IServiceCollection services)
         {
             services
+                .AddSwaggerGen(c =>
+                {
+                    c.SwaggerDoc("v1", new Info { Title = "Test Website", Version = "v1" });
+                })
                 .AddSingleton(_configuration)
                 .AddMvc();
-            services.AddSwaggerGen();
         }
 
         public void Configure(IApplicationBuilder app, IApplicationLifetime appLifetime)
@@ -54,7 +58,10 @@ namespace Winton.Extensions.Configuration.Consul.Website
             app
                 .UseMvc()
                 .UseSwagger()
-                .UseSwaggerUi("swagger");
+                .UseSwaggerUI(c =>
+                {
+                    c.SwaggerEndpoint("/swagger/v1/swagger.json", "Test Website");
+                });
 
             appLifetime.ApplicationStopping.Register(_consulConfigCancellationTokenSource.Cancel);
         }
