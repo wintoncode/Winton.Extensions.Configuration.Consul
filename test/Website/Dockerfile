@@ -1,4 +1,4 @@
-FROM microsoft/dotnet:1.1.4-runtime
+FROM microsoft/dotnet:1.1.5-runtime
 
 COPY bin/Release/netcoreapp1.1/publish /app
 WORKDIR /app

@@ -27,12 +27,12 @@ namespace Winton.Extensions.Configuration.Consul
         {
             _configParserMock = new Mock<IConfigurationParser>(MockBehavior.Strict);
             _consulConfigSourceMock = new Mock<IConsulConfigurationSource>(MockBehavior.Strict);
-            _consulConfigSourceMock.SetupGet(ccs => ccs.Parser).Returns(_configParserMock.Object);
-            _consulConfigSourceMock.SetupGet(ccs => ccs.Key).Returns(_Key);
-            _consulConfigSourceMock.SetupGet(ccs => ccs.Optional).Returns(false);
-            _consulConfigSourceMock.SetupGet(ccs => ccs.ReloadOnChange).Returns(false);
-            _consulConfigSourceMock.SetupGet(ccs => ccs.OnLoadException).Returns(null);
-            _consulConfigSourceMock.SetupGet(ccs => ccs.OnWatchException).Returns(null);
+            _consulConfigSourceMock.Setup(ccs => ccs.Parser).Returns(_configParserMock.Object);
+            _consulConfigSourceMock.Setup(ccs => ccs.Key).Returns(_Key);
+            _consulConfigSourceMock.Setup(ccs => ccs.Optional).Returns(false);
+            _consulConfigSourceMock.Setup(ccs => ccs.ReloadOnChange).Returns(false);
+            _consulConfigSourceMock.Setup(ccs => ccs.OnLoadException).Returns(null);
+            _consulConfigSourceMock.Setup(ccs => ccs.OnWatchException).Returns(() => ctx => { });
 
             _changeTokenMock = new Mock<IChangeToken>(MockBehavior.Strict);
             _configQueryResultMock = new Mock<IConfigQueryResult>(MockBehavior.Strict);
@@ -52,7 +52,7 @@ namespace Winton.Extensions.Configuration.Consul
         [Test]
         public void ShouldThrowIfParserIsNullWhenConstructed()
         {
-            _consulConfigSourceMock.SetupGet(ccs => ccs.Parser).Returns((IConfigurationParser)null);
+            _consulConfigSourceMock.Setup(ccs => ccs.Parser).Returns((IConfigurationParser)null);
 
             Assert.That(
                 () => new ConsulConfigurationProvider(_consulConfigSourceMock.Object, _consulConfigClientMock.Object),
@@ -77,7 +77,7 @@ namespace Winton.Extensions.Configuration.Consul
         [Test]
         public void ShouldHaveEmptyDataIfConfigDoesNotExistdAndIsOptional()
         {
-            _consulConfigSourceMock.SetupGet(ccs => ccs.Optional).Returns(true);
+            _consulConfigSourceMock.Setup(ccs => ccs.Optional).Returns(true);
             _configQueryResultMock.Setup(cqr => cqr.Exists).Returns(false);
 
             _consulConfigProvider.Load();
@@ -90,7 +90,7 @@ namespace Winton.Extensions.Configuration.Consul
         [Test]
         public void ShouldNotParseIfConfigBytesIsNullWhenLoad()
         {
-            _consulConfigSourceMock.SetupGet(ccs => ccs.Optional).Returns(true);
+            _consulConfigSourceMock.Setup(ccs => ccs.Optional).Returns(true);
             _configQueryResultMock.Setup(cqr => cqr.Exists).Returns(false);
 
             _consulConfigProvider.Load();
@@ -104,11 +104,11 @@ namespace Winton.Extensions.Configuration.Consul
         public void ShouldThrowIfConfigDoesNotExistAndIsNotOptonalWhenLoad()
         {
             ConsulLoadExceptionContext actualExceptionContext = null;
-            _consulConfigSourceMock.SetupGet(ccs => ccs.Optional).Returns(false);
+            _consulConfigSourceMock.Setup(ccs => ccs.Optional).Returns(false);
             _configQueryResultMock.Setup(cqr => cqr.Exists).Returns(false);
 
             _consulConfigSourceMock
-                .SetupGet(ccs => ccs.OnLoadException)
+                .Setup(ccs => ccs.OnLoadException)
                 .Returns(exceptionContext =>
                 {
                     actualExceptionContext = exceptionContext;
@@ -134,7 +134,7 @@ namespace Winton.Extensions.Configuration.Consul
 
             _consulConfigClientMock.Setup(ccc => ccc.GetConfig()).ThrowsAsync(new Exception());
             _consulConfigSourceMock
-                .SetupGet(ccs => ccs.OnLoadException)
+                .Setup(ccs => ccs.OnLoadException)
                 .Returns(exceptionContext =>
                 {
                     calledOnLoadException = true;
@@ -159,7 +159,7 @@ namespace Winton.Extensions.Configuration.Consul
 
             _consulConfigClientMock.Setup(ccc => ccc.GetConfig()).ThrowsAsync(expectedException);
             _consulConfigSourceMock
-                .SetupGet(ccs => ccs.OnLoadException)
+                .Setup(ccs => ccs.OnLoadException)
                 .Returns(exceptionContext =>
                 {
                     actualExceptionContext = exceptionContext;
@@ -183,7 +183,7 @@ namespace Winton.Extensions.Configuration.Consul
 
             _consulConfigClientMock.Setup(ccc => ccc.GetConfig()).ThrowsAsync(new Exception());
             _consulConfigSourceMock
-                .SetupGet(ccs => ccs.OnLoadException)
+                .Setup(ccs => ccs.OnLoadException)
                 .Returns(exceptionContext =>
                 {
                     actualExceptionContext = exceptionContext;
@@ -207,7 +207,7 @@ namespace Winton.Extensions.Configuration.Consul
 
             _consulConfigClientMock.Setup(ccc => ccc.GetConfig()).ThrowsAsync(exception);
             _consulConfigSourceMock
-                .SetupGet(ccs => ccs.OnLoadException)
+                .Setup(ccs => ccs.OnLoadException)
                 .Returns(exceptionContext =>
                 {
                     exceptionContext.Ignore = false;
@@ -223,7 +223,7 @@ namespace Winton.Extensions.Configuration.Consul
 
             _consulConfigClientMock.Setup(ccc => ccc.GetConfig()).ThrowsAsync(exception);
             _consulConfigSourceMock
-                .SetupGet(ccs => ccs.OnLoadException)
+                .Setup(ccs => ccs.OnLoadException)
                 .Returns(exceptionContext =>
                 {
                     exceptionContext.Ignore = true;
@@ -235,7 +235,7 @@ namespace Winton.Extensions.Configuration.Consul
         [Test]
         public void ShouldWatchForChangesIfSourceReloadOnChangesIsTrue()
         {
-            _consulConfigSourceMock.SetupGet(ccs => ccs.ReloadOnChange).Returns(true);
+            _consulConfigSourceMock.Setup(ccs => ccs.ReloadOnChange).Returns(true);
             _changeTokenMock
                 .Setup(ct => ct.RegisterChangeCallback(It.IsAny<Action<object>>(), It.IsAny<object>()))
                 .Returns(null as IDisposable);
@@ -252,8 +252,8 @@ namespace Winton.Extensions.Configuration.Consul
         public void ShouldReloadConfigIfReloadOnChangesAndDataInConsulHasChanged()
         {
             Action<object> onChangeAction = null;
-            _consulConfigSourceMock.SetupGet(ccs => ccs.ReloadOnChange).Returns(true);
-            _configQueryResultMock.SetupGet(cqr => cqr.Exists).Returns(false);
+            _consulConfigSourceMock.Setup(ccs => ccs.ReloadOnChange).Returns(true);
+            _configQueryResultMock.Setup(cqr => cqr.Exists).Returns(false);
             _changeTokenMock
                 .Setup(ct => ct.RegisterChangeCallback(It.IsAny<Action<object>>(), It.IsAny<object>()))
                 .Callback((Action<object> action, object state) =>
@@ -276,9 +276,9 @@ namespace Winton.Extensions.Configuration.Consul
         public void ShouldNotThrowIfDoesNotExistOnReload(bool optional)
         {
             Action<object> onChangeAction = null;
-            _consulConfigSourceMock.SetupGet(ccs => ccs.Optional).Returns(optional);
-            _consulConfigSourceMock.SetupGet(ccs => ccs.ReloadOnChange).Returns(true);
-            _configQueryResultMock.SetupGet(cqr => cqr.Exists).Returns(false);
+            _consulConfigSourceMock.Setup(ccs => ccs.Optional).Returns(optional);
+            _consulConfigSourceMock.Setup(ccs => ccs.ReloadOnChange).Returns(true);
+            _configQueryResultMock.Setup(cqr => cqr.Exists).Returns(false);
             _changeTokenMock
                 .Setup(ct => ct.RegisterChangeCallback(It.IsAny<Action<object>>(), It.IsAny<object>()))
                 .Callback((Action<object> action, object state) =>
@@ -301,9 +301,9 @@ namespace Winton.Extensions.Configuration.Consul
             var originalData = new Dictionary<string, string> { { key, value } };
             Action<object> onChangeAction = null;
 
-            _consulConfigSourceMock.SetupGet(ccs => ccs.Optional).Returns(false);
-            _consulConfigSourceMock.SetupGet(ccs => ccs.ReloadOnChange).Returns(true);
-            _configQueryResultMock.SetupGet(cqr => cqr.Exists).Returns(false);
+            _consulConfigSourceMock.Setup(ccs => ccs.Optional).Returns(false);
+            _consulConfigSourceMock.Setup(ccs => ccs.ReloadOnChange).Returns(true);
+            _configQueryResultMock.Setup(cqr => cqr.Exists).Returns(false);
             _changeTokenMock
                 .Setup(ct => ct.RegisterChangeCallback(It.IsAny<Action<object>>(), It.IsAny<object>()))
                 .Callback((Action<object> action, object state) =>
@@ -324,8 +324,8 @@ namespace Winton.Extensions.Configuration.Consul
         private void DoLoad(IDictionary<string, string> data)
         {
             _configParserMock.Setup(cp => cp.Parse(It.IsAny<MemoryStream>())).Returns(data);
-            _configQueryResultMock.SetupGet(cqr => cqr.Exists).Returns(true);
-            _configQueryResultMock.SetupGet(cqr => cqr.Value).Returns(new byte[] { });
+            _configQueryResultMock.Setup(cqr => cqr.Exists).Returns(true);
+            _configQueryResultMock.Setup(cqr => cqr.Value).Returns(new byte[] { });
 
             _consulConfigProvider.Load();
         }

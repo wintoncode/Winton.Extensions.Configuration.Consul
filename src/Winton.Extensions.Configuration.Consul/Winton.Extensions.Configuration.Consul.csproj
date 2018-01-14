@@ -3,17 +3,17 @@
   <PropertyGroup>
     <Authors>Winton</Authors>
     <Company>Winton</Company>
-    <Copyright>Copyright 2017 Winton</Copyright>
-    <Description>Provides support for configuring .Net Core applications with Consul</Description>
+    <Copyright>Copyright 2018 Winton</Copyright>
+    <Description>Provides support for configuring .NET Core applications with Consul</Description>
     <GenerateDocumentationFile>True</GenerateDocumentationFile>
     <GetVersion>False</GetVersion>
-    <NoWarn>$(NoWarn);SA1101;SA1309;SA1413</NoWarn>
+    <NoWarn>$(NoWarn);SA1101;SA1309;SA1413;</NoWarn>
     <PackageId>Winton.Extensions.Configuration.Consul</PackageId>
     <PackageIconUrl>https://raw.githubusercontent.com/wintoncode/Winton.Extensions.Configuration.Consul/master/icon.jpg</PackageIconUrl>
     <PackageLicenseUrl>https://raw.githubusercontent.com/wintoncode/Winton.Extensions.Configuration.Consul/master/LICENSE</PackageLicenseUrl>
     <PackageProjectUrl>https://github.com/wintoncode/Winton.Extensions.Configuration.Consul</PackageProjectUrl>
     <PackageRequireLicenseAcceptance>False</PackageRequireLicenseAcceptance>
-    <PackageTags>.Net;.Net Core;dotnetcore;Asp.Net;Asp.Net Core;aspnetcore;configuration;consul;winton;wintoncode</PackageTags>
+    <PackageTags>.NET;Core;dotnetcore;ASP.NET;aspnetcore;configuration;consul;winton;wintoncode</PackageTags>
     <PackageVersion>$(NuGetVersion)</PackageVersion>
     <RepositoryType>git</RepositoryType>
     <RepositoryUrl>https://github.com/wintoncode/Winton.Extensions.Configuration.Consul</RepositoryUrl>
@@ -31,10 +31,10 @@
   </ItemGroup>
 
   <ItemGroup>
-    <PackageReference Include="Consul" Version="0.7.0.3" />
+    <PackageReference Include="Consul" Version="0.7.2.3" />
     <PackageReference Include="GitVersionTask" Version="4.0.0-beta0011" PrivateAssets="All" />
     <PackageReference Include="Microsoft.Extensions.Configuration" Version="1.0.2" />
-    <PackageReference Include="Newtonsoft.Json" Version="9.0.1" />
+    <PackageReference Include="Newtonsoft.Json" Version="10.0.3" />
     <PackageReference Include="StyleCop.Analyzers" Version="1.0.2" PrivateAssets="All" />
   </ItemGroup>
 
