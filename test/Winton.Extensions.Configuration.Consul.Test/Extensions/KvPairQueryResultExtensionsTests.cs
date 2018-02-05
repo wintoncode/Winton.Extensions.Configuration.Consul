@@ -1,27 +1,28 @@
+using System.Collections.Generic;
 using System.Net;
 using Consul;
-using NUnit.Framework;
+using FluentAssertions;
+using Xunit;
 
 namespace Winton.Extensions.Configuration.Consul.Extensions
 {
-    [TestFixture]
     public class KvPairQueryResultExtensionsTests
     {
         public sealed class HasValue : KvPairQueryResultExtensionsTests
         {
-            [TestCase]
-            public void ShouldBeFalseWhenNull()
+            [Fact]
+            private void ShouldBeFalseWhenNull()
             {
                 var queryResult = null as QueryResult<KVPair>;
 
                 // ReSharper disable once ExpressionIsAlwaysNull
                 bool hasValue = queryResult.HasValue();
 
-                Assert.That(hasValue, Is.False);
+                hasValue.Should().BeFalse();
             }
 
-            [TestCase]
-            public void ShouldBeFalseWhenResponseHasEmptyValue()
+            [Fact]
+            private void ShouldBeFalseWhenResponseHasEmptyValue()
             {
                 var queryResult = new QueryResult<KVPair>
                 {
@@ -36,11 +37,11 @@ namespace Winton.Extensions.Configuration.Consul.Extensions
 
                 bool hasValue = queryResult.HasValue();
 
-                Assert.That(hasValue, Is.False);
+                hasValue.Should().BeFalse();
             }
 
-            [TestCase]
-            public void ShouldBeFalseWhenResponseHasNullValue()
+            [Fact]
+            private void ShouldBeFalseWhenResponseHasNullValue()
             {
                 var queryResult = new QueryResult<KVPair>
                 {
@@ -53,11 +54,11 @@ namespace Winton.Extensions.Configuration.Consul.Extensions
 
                 bool hasValue = queryResult.HasValue();
 
-                Assert.That(hasValue, Is.False);
+                hasValue.Should().BeFalse();
             }
 
-            [TestCase]
-            public void ShouldBeFalseWhenResponseIsNull()
+            [Fact]
+            private void ShouldBeFalseWhenResponseIsNull()
             {
                 var queryResult = new QueryResult<KVPair>
                 {
@@ -67,11 +68,11 @@ namespace Winton.Extensions.Configuration.Consul.Extensions
 
                 bool hasValue = queryResult.HasValue();
 
-                Assert.That(hasValue, Is.False);
+                hasValue.Should().BeFalse();
             }
 
-            [TestCase]
-            public void ShouldBeFalseWhenStatusIsNotFound()
+            [Fact]
+            private void ShouldBeFalseWhenStatusIsNotFound()
             {
                 var queryResult = new QueryResult<KVPair>
                 {
@@ -80,11 +81,11 @@ namespace Winton.Extensions.Configuration.Consul.Extensions
 
                 bool hasValue = queryResult.HasValue();
 
-                Assert.That(hasValue, Is.False);
+                hasValue.Should().BeFalse();
             }
 
-            [TestCase]
-            public void ShouldSetExistsToTrueWhenResultHasValue()
+            [Fact]
+            private void ShouldBeToTrueWhenResultHasValue()
             {
                 var queryResult = new QueryResult<KVPair>
                 {
@@ -100,14 +101,14 @@ namespace Winton.Extensions.Configuration.Consul.Extensions
 
                 bool hasValue = queryResult.HasValue();
 
-                Assert.That(hasValue, Is.True);
+                hasValue.Should().BeTrue();
             }
         }
 
         public sealed class Value : KvPairQueryResultExtensionsTests
         {
-            [TestCase]
-            public void ShouldBeNullIfResponseIsNull()
+            [Fact]
+            private void ShouldBeNullIfResponseIsNull()
             {
                 var queryResult = new QueryResult<KVPair>
                 {
@@ -116,11 +117,11 @@ namespace Winton.Extensions.Configuration.Consul.Extensions
 
                 byte[] value = queryResult.Value();
 
-                Assert.That(value, Is.Null);
+                value.Should().BeNull();
             }
 
-            [TestCase]
-            public void ShouldReturnResponseValue()
+            [Fact]
+            private void ShouldReturnResponseValue()
             {
                 var queryResult = new QueryResult<KVPair>
                 {
@@ -136,13 +137,7 @@ namespace Winton.Extensions.Configuration.Consul.Extensions
 
                 byte[] value = queryResult.Value();
 
-                Assert.That(
-                    value,
-                    Is.EquivalentTo(
-                        new byte[]
-                        {
-                            1
-                        }));
+                value.Should().BeEquivalentTo(new List<byte> { 1 }.ToArray());
             }
         }
     }
