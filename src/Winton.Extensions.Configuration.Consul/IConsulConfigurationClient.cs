@@ -3,6 +3,7 @@
 
 using System;
 using System.Threading.Tasks;
+using Consul;
 using Microsoft.Extensions.Primitives;
 
 namespace Winton.Extensions.Configuration.Consul
@@ -11,8 +12,8 @@ namespace Winton.Extensions.Configuration.Consul
     internal interface IConsulConfigurationClient
     {
         /// <summary>Gets the config from consul asynchronously.</summary>
-        /// <returns>A Task containing the result of the query for the config.</returns>
-        Task<IConfigQueryResult> GetConfig();
+        /// <returns>A task containing the result of the query for the config.</returns>
+        Task<QueryResult<KVPair>> GetConfig();
 
         /// <summary>Watches the config for changes.</summary>
         /// <param name="onException">An action to be invoked if an exception occurs during the watch.</param>

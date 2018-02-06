@@ -26,11 +26,11 @@ namespace Winton.Extensions.Configuration.Consul
             _source = source;
         }
 
-        public async Task<IConfigQueryResult> GetConfig()
+        public async Task<QueryResult<KVPair>> GetConfig()
         {
             QueryResult<KVPair> result = await GetKvPair().ConfigureAwait(false);
             UpdateLastIndex(result);
-            return new ConfigQueryResult(result);
+            return result;
         }
 
         public IChangeToken Watch(Action<ConsulWatchExceptionContext> onException)
