@@ -16,6 +16,38 @@ namespace Winton.Extensions.Configuration.Consul
         }
 
         [Test]
+        public void ShouldSetExistsToFalseWhenConstructedFromResultWithEmptyValue()
+        {
+            var kvPairResult = new QueryResult<KVPair>
+            {
+                Response = new KVPair("Key")
+                {
+                    Value = new byte[]
+                    {
+                    }
+                },
+                StatusCode = HttpStatusCode.OK
+            };
+
+            var configQueryResult = new ConfigQueryResult(kvPairResult);
+
+            Assert.That(configQueryResult.Exists, Is.False);
+        }
+
+        [Test]
+        public void ShouldSetExistsToFalseWhenConstructedFromResultWithNotFoundStatus()
+        {
+            var kvPairResult = new QueryResult<KVPair>
+            {
+                StatusCode = HttpStatusCode.NotFound
+            };
+
+            var configQueryResult = new ConfigQueryResult(kvPairResult);
+
+            Assert.That(configQueryResult.Exists, Is.False);
+        }
+
+        [Test]
         public void ShouldSetExistsToFalseWhenConstructedFromResultWithNullResponse()
         {
             var kvPairResult = new QueryResult<KVPair>
@@ -47,39 +79,12 @@ namespace Winton.Extensions.Configuration.Consul
         }
 
         [Test]
-        public void ShouldSetExistsToFalseWhenConstructedFromResultWithEmptyValue()
-        {
-            var kvPairResult = new QueryResult<KVPair>
-            {
-                Response = new KVPair("Key")
-                {
-                    Value = new byte[] { }
-                },
-                StatusCode = HttpStatusCode.OK
-            };
-
-            var configQueryResult = new ConfigQueryResult(kvPairResult);
-
-            Assert.That(configQueryResult.Exists, Is.False);
-        }
-
-        [Test]
-        public void ShouldSetExistsToFalseWhenConstructedFromResultWithNotFoundStatus()
-        {
-            var kvPairResult = new QueryResult<KVPair>
-            {
-                StatusCode = HttpStatusCode.NotFound
-            };
-
-            var configQueryResult = new ConfigQueryResult(kvPairResult);
-
-            Assert.That(configQueryResult.Exists, Is.False);
-        }
-
-        [Test]
         public void ShouldSetValueToResultValue()
         {
-            var actualValue = new byte[] { 1 };
+            var actualValue = new byte[]
+            {
+                1
+            };
             var kvPairResult = new QueryResult<KVPair>
             {
                 Response = new KVPair("Key")

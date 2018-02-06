@@ -13,13 +13,13 @@ namespace Winton.Extensions.Configuration.Consul
     internal sealed class ConsulConfigurationClientTests
     {
         private const string _Key = "Key/Test";
-
-        private ConsulConfigurationClient _consulConfigurationClient;
+        private CancellationToken _cancellationToken;
+        private CancellationTokenSource _cancellationTokenSource;
         private Mock<IConsulClientFactory> _consulClientFactoryMock;
         private Mock<IConsulClient> _consulClientMock;
+
+        private ConsulConfigurationClient _consulConfigurationClient;
         private Mock<IConsulConfigurationSource> _consulConfigurationSourceMock;
-        private CancellationTokenSource _cancellationTokenSource;
-        private CancellationToken _cancellationToken;
         private Mock<IKVEndpoint> _kvMock;
 
         [SetUp]
@@ -40,14 +40,29 @@ namespace Winton.Extensions.Configuration.Consul
             _consulClientFactoryMock = new Mock<IConsulClientFactory>(MockBehavior.Strict);
             _consulClientFactoryMock.Setup(ccf => ccf.Create()).Returns(_consulClientMock.Object);
 
-            _consulConfigurationClient = new ConsulConfigurationClient(_consulClientFactoryMock.Object, _consulConfigurationSourceMock.Object);
+            _consulConfigurationClient = new ConsulConfigurationClient(
+                _consulClientFactoryMock.Object,
+                _consulConfigurationSourceMock.Object);
         }
 
-        [TearDown]
-        public void TearDown()
+        [Test]
+        public async Task ShouldCallReloadOnChangeTokenIfIndexForKeyHasUpdatedWhenWatch()
         {
-            // Ensure any background threads that were started are stopped
-            _cancellationTokenSource.Cancel();
+            var configChangedCompletion = new TaskCompletionSource<bool>();
+            var result = new QueryResult<KVPair>
+            {
+                LastIndex = 1,
+                StatusCode = HttpStatusCode.OK
+            };
+            _kvMock
+                .Setup(kv => kv.Get(_Key, It.IsAny<QueryOptions>(), _cancellationToken))
+                .ReturnsAsync(result);
+
+            ChangeToken.OnChange(
+                () => _consulConfigurationClient.Watch(null),
+                () => configChangedCompletion.SetResult(true));
+
+            Assert.That(await configChangedCompletion.Task, Is.True);
         }
 
         [Test]
@@ -60,6 +75,30 @@ namespace Winton.Extensions.Configuration.Consul
             await SimulateGet(result);
 
             Assert.That(() => _kvMock.Verify(kv => kv.Get(_Key, null, _cancellationToken)), Throws.Nothing);
+        }
+
+        [Test]
+        public async Task ShouldInvokeExceptionActionWhenWatchThrowsException()
+        {
+            Exception actualException = null;
+            var expectedException = new Exception();
+            var configChangedCompletion = new TaskCompletionSource<bool>();
+
+            _kvMock
+                .Setup(kv => kv.Get(_Key, It.IsAny<QueryOptions>(), _cancellationToken))
+                .ThrowsAsync(expectedException);
+
+            _consulConfigurationClient.Watch(
+                exceptionContext =>
+                {
+                    actualException = exceptionContext.Exception;
+                    _cancellationTokenSource.Cancel();
+                    configChangedCompletion.SetResult(true);
+                });
+
+            await configChangedCompletion.Task;
+
+            Assert.That(actualException, Is.SameAs(expectedException));
         }
 
         [Test]
@@ -113,11 +152,12 @@ namespace Winton.Extensions.Configuration.Consul
             var completion = new TaskCompletionSource<bool>();
 
             // Get config once which should update the latest index
-            await SimulateGet(new QueryResult<KVPair>
-            {
-                LastIndex = 1,
-                StatusCode = HttpStatusCode.OK
-            });
+            await SimulateGet(
+                new QueryResult<KVPair>
+                {
+                    LastIndex = 1,
+                    StatusCode = HttpStatusCode.OK
+                });
 
             var result = new QueryResult<KVPair>
             {
@@ -126,10 +166,11 @@ namespace Winton.Extensions.Configuration.Consul
             };
             _kvMock
                 .Setup(kv => kv.Get(_Key, It.IsAny<QueryOptions>(), _cancellationToken))
-                .Callback((string key, QueryOptions options, CancellationToken cancellationToken) =>
-                {
-                    lastWaitIndex = options.WaitIndex;
-                })
+                .Callback(
+                    (string key, QueryOptions options, CancellationToken cancellationToken) =>
+                    {
+                        lastWaitIndex = options.WaitIndex;
+                    })
                 .ReturnsAsync(result);
 
             // Calling it a second time should invoke a long polling with the index from the last update
@@ -158,10 +199,11 @@ namespace Winton.Extensions.Configuration.Consul
             };
             _kvMock
                 .Setup(kv => kv.Get(_Key, It.IsAny<QueryOptions>(), _cancellationToken))
-                .Callback((string key, QueryOptions options, CancellationToken cancellationToken) =>
-                {
-                    lastWaitIndex = options.WaitIndex;
-                })
+                .Callback(
+                    (string key, QueryOptions options, CancellationToken cancellationToken) =>
+                    {
+                        lastWaitIndex = options.WaitIndex;
+                    })
                 .ReturnsAsync(result);
 
             // Calling it a second time should invoke a long polling with the index from the last update
@@ -173,56 +215,11 @@ namespace Winton.Extensions.Configuration.Consul
             Assert.That(lastWaitIndex, Is.EqualTo(lastIndex));
         }
 
-        [Test]
-        public async Task ShouldCallReloadOnChangeTokenIfIndexForKeyHasUpdatedWhenWatch()
+        [TearDown]
+        public void TearDown()
         {
-            var configChangedCompletion = new TaskCompletionSource<bool>();
-            var result = new QueryResult<KVPair>
-            {
-                LastIndex = 1,
-                StatusCode = HttpStatusCode.OK
-            };
-            _kvMock
-                .Setup(kv => kv.Get(_Key, It.IsAny<QueryOptions>(), _cancellationToken))
-                .ReturnsAsync(result);
-
-            ChangeToken.OnChange(
-                () => _consulConfigurationClient.Watch(null),
-                () => configChangedCompletion.SetResult(true));
-
-            Assert.That(await configChangedCompletion.Task, Is.True);
-        }
-
-        [Test]
-        public async Task ShouldInvokeExceptionActionWhenWatchThrowsException()
-        {
-            Exception actualException = null;
-            Exception expectedException = new Exception();
-            var configChangedCompletion = new TaskCompletionSource<bool>();
-
-            _kvMock
-                .Setup(kv => kv.Get(_Key, It.IsAny<QueryOptions>(), _cancellationToken))
-                .ThrowsAsync(expectedException);
-
-            _consulConfigurationClient.Watch(exceptionContext =>
-            {
-                actualException = exceptionContext.Exception;
-                _cancellationTokenSource.Cancel();
-                configChangedCompletion.SetResult(true);
-            });
-
-            await configChangedCompletion.Task;
-
-            Assert.That(actualException, Is.SameAs(expectedException));
-        }
-
-        private async Task<IConfigQueryResult> SimulateGet(QueryResult<KVPair> result)
-        {
-            _kvMock
-                .Setup(kv => kv.Get(_Key, It.IsAny<QueryOptions>(), _cancellationToken))
-                .ReturnsAsync(result);
-
-            return await _consulConfigurationClient.GetConfig();
+            // Ensure any background threads that were started are stopped
+            _cancellationTokenSource.Cancel();
         }
 
         private async Task<bool> SimulateConfigChange(ulong lastIndex)
@@ -258,6 +255,15 @@ namespace Winton.Extensions.Configuration.Consul
                 .ReturnsAsync(result);
 
             return await configChangedCompletion.Task;
+        }
+
+        private async Task<IConfigQueryResult> SimulateGet(QueryResult<KVPair> result)
+        {
+            _kvMock
+                .Setup(kv => kv.Get(_Key, It.IsAny<QueryOptions>(), _cancellationToken))
+                .ReturnsAsync(result);
+
+            return await _consulConfigurationClient.GetConfig();
         }
     }
 }

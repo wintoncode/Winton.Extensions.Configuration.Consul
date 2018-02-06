@@ -17,8 +17,8 @@ namespace Winton.Extensions.Configuration.Consul
         private readonly object _lastIndexLock = new object();
         private readonly IConsulConfigurationSource _source;
 
-        private ConfigurationReloadToken _reloadToken = new ConfigurationReloadToken();
         private ulong _lastIndex;
+        private ConfigurationReloadToken _reloadToken = new ConfigurationReloadToken();
 
         public ConsulConfigurationClient(IConsulClientFactory consulClientFactory, IConsulConfigurationSource source)
         {
@@ -28,7 +28,7 @@ namespace Winton.Extensions.Configuration.Consul
 
         public async Task<IConfigQueryResult> GetConfig()
         {
-            var result = await GetKVPair().ConfigureAwait(false);
+            QueryResult<KVPair> result = await GetKvPair().ConfigureAwait(false);
             UpdateLastIndex(result);
             return new ConfigQueryResult(result);
         }
@@ -39,40 +39,24 @@ namespace Winton.Extensions.Configuration.Consul
             return _reloadToken;
         }
 
-        private async Task<QueryResult<KVPair>> GetKVPair(QueryOptions queryOptions = null)
+        private async Task<QueryResult<KVPair>> GetKvPair(QueryOptions queryOptions = null)
         {
             using (IConsulClient consulClient = _consulClientFactory.Create())
             {
-                QueryResult<KVPair> result = await consulClient.KV.Get(_source.Key, queryOptions, _source.CancellationToken)
-                    .ConfigureAwait(false);
+                QueryResult<KVPair> result =
+                    await consulClient
+                        .KV
+                        .Get(_source.Key, queryOptions, _source.CancellationToken)
+                        .ConfigureAwait(false);
+
                 switch (result.StatusCode)
                 {
                     case HttpStatusCode.OK:
                     case HttpStatusCode.NotFound:
                         return result;
                     default:
-                        throw new Exception($"Error loading configuration from consul. Status code: {result.StatusCode}.");
-                }
-            }
-        }
-
-        private async Task PollForChanges(Action<ConsulWatchExceptionContext> onException)
-        {
-            while (!_source.CancellationToken.IsCancellationRequested)
-            {
-                try
-                {
-                    if (await HasValueChanged().ConfigureAwait(false))
-                    {
-                        var previousToken = Interlocked.Exchange(ref _reloadToken, new ConfigurationReloadToken());
-                        previousToken.OnReload();
-                        return;
-                    }
-                }
-                catch (Exception exception)
-                {
-                    var exceptionContext = new ConsulWatchExceptionContext(_source, exception);
-                    onException?.Invoke(exceptionContext);
+                        throw new Exception(
+                            $"Error loading configuration from consul. Status code: {result.StatusCode}.");
                 }
             }
         }
@@ -85,11 +69,34 @@ namespace Winton.Extensions.Configuration.Consul
                 queryOptions = new QueryOptions { WaitIndex = _lastIndex };
             }
 
-            var result = await GetKVPair(queryOptions).ConfigureAwait(false);
+            QueryResult<KVPair> result = await GetKvPair(queryOptions).ConfigureAwait(false);
             return result != null && UpdateLastIndex(result);
         }
 
-        private bool UpdateLastIndex(QueryResult<KVPair> queryResult)
+        private async Task PollForChanges(Action<ConsulWatchExceptionContext> onException)
+        {
+            while (!_source.CancellationToken.IsCancellationRequested)
+            {
+                try
+                {
+                    if (await HasValueChanged().ConfigureAwait(false))
+                    {
+                        ConfigurationReloadToken previousToken = Interlocked.Exchange(
+                            ref _reloadToken,
+                            new ConfigurationReloadToken());
+                        previousToken.OnReload();
+                        return;
+                    }
+                }
+                catch (Exception exception)
+                {
+                    var exceptionContext = new ConsulWatchExceptionContext(_source, exception);
+                    onException?.Invoke(exceptionContext);
+                }
+            }
+        }
+
+        private bool UpdateLastIndex(QueryResult queryResult)
         {
             lock (_lastIndexLock)
             {

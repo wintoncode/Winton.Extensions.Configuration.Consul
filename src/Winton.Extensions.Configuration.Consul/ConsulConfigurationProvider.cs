@@ -15,7 +15,9 @@ namespace Winton.Extensions.Configuration.Consul
         private readonly IConsulConfigurationClient _consulConfigClient;
         private readonly IConsulConfigurationSource _source;
 
-        public ConsulConfigurationProvider(IConsulConfigurationSource source, IConsulConfigurationClient consulConfigClient)
+        public ConsulConfigurationProvider(
+            IConsulConfigurationSource source,
+            IConsulConfigurationClient consulConfigClient)
         {
             if (source.Parser == null)
             {
@@ -31,7 +33,7 @@ namespace Winton.Extensions.Configuration.Consul
                     () => _consulConfigClient.Watch(_source.OnWatchException),
                     async () =>
                     {
-                        await DoLoad(reloading: true).ConfigureAwait(false);
+                        await DoLoad(true).ConfigureAwait(false);
                         OnReload();
                     });
             }
@@ -41,7 +43,7 @@ namespace Winton.Extensions.Configuration.Consul
         {
             try
             {
-                DoLoad(reloading: false).Wait();
+                DoLoad(false).Wait();
             }
             catch (AggregateException aggregateException)
             {
@@ -58,13 +60,12 @@ namespace Winton.Extensions.Configuration.Consul
                 {
                     if (!reloading)
                     {
-                        throw new Exception($"The configuration for key {_source.Key} was not found and is not optional.");
+                        throw new Exception(
+                            $"The configuration for key {_source.Key} was not found and is not optional.");
                     }
-                    else
-                    {
-                        // Don't overwrite mandatory config with empty data if not found when reloading
-                        return;
-                    }
+
+                    // Don't overwrite mandatory config with empty data if not found when reloading
+                    return;
                 }
 
                 LoadIntoMemory(configQueryResult);
@@ -75,12 +76,21 @@ namespace Winton.Extensions.Configuration.Consul
             }
         }
 
+        private void HandleLoadException(Exception exception)
+        {
+            var exceptionContext = new ConsulLoadExceptionContext(_source, exception);
+            _source.OnLoadException?.Invoke(exceptionContext);
+            if (!exceptionContext.Ignore)
+            {
+                throw exception;
+            }
+        }
+
         private void LoadIntoMemory(IConfigQueryResult configQueryResult)
         {
             if (!configQueryResult.Exists)
             {
                 Data = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
-                return;
             }
             else
             {
@@ -89,16 +99,6 @@ namespace Winton.Extensions.Configuration.Consul
                     IDictionary<string, string> parsedData = _source.Parser.Parse(configStream);
                     Data = new Dictionary<string, string>(parsedData, StringComparer.OrdinalIgnoreCase);
                 }
-            }
-        }
-
-        private void HandleLoadException(Exception exception)
-        {
-            var exceptionContext = new ConsulLoadExceptionContext(_source, exception);
-            _source.OnLoadException?.Invoke(exceptionContext);
-            if (!exceptionContext.Ignore)
-            {
-                throw exception;
             }
         }
     }
