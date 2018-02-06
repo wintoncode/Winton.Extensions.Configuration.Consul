@@ -29,9 +29,9 @@ namespace Winton.Extensions.Configuration.Consul
 
         public Action<ConsulClientConfiguration> ConsulConfigurationOptions { get; set; }
 
-        public Action<HttpClient> ConsulHttpClientOptions { get; set; }
-
         public Action<HttpClientHandler> ConsulHttpClientHandlerOptions { get; set; }
+
+        public Action<HttpClient> ConsulHttpClientOptions { get; set; }
 
         public string Key { get; }
 

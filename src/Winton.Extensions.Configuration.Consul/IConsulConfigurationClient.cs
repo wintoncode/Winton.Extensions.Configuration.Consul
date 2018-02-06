@@ -16,7 +16,7 @@ namespace Winton.Extensions.Configuration.Consul
 
         /// <summary>Watches the config for changes.</summary>
         /// <param name="onException">An action to be invoked if an exception occurs during the watch.</param>
-        /// <returns>An <see cref="IChangeToken"/> that will indicated when changes have occured.</returns>
+        /// <returns>An <see cref="IChangeToken" /> that will indicated when changes have occured.</returns>
         IChangeToken Watch(Action<ConsulWatchExceptionContext> onException);
     }
 }

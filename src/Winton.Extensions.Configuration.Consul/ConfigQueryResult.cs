@@ -11,8 +11,8 @@ namespace Winton.Extensions.Configuration.Consul
         public ConfigQueryResult(QueryResult<KVPair> kvPairQueryResult)
         {
             Exists = kvPairQueryResult?.StatusCode != HttpStatusCode.NotFound
-                && kvPairQueryResult?.Response?.Value != null
-                && kvPairQueryResult?.Response?.Value.Length != 0;
+                     && kvPairQueryResult?.Response?.Value != null
+                     && kvPairQueryResult.Response?.Value.Length != 0;
             Value = kvPairQueryResult?.Response?.Value;
         }
 

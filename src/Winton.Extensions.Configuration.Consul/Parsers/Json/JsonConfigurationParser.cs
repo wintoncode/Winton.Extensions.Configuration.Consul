@@ -8,16 +8,17 @@ using Newtonsoft.Json.Linq;
 
 namespace Winton.Extensions.Configuration.Consul.Parsers.Json
 {
+    /// <inheritdoc />
     /// <summary>
-    /// Implemenation of <see cref="IConfigurationParser"/> for parsing JSON Configuration
+    ///     Implemenation of <see cref="IConfigurationParser" /> for parsing JSON Configuration
     /// </summary>
     public sealed class JsonConfigurationParser : IConfigurationParser
     {
-        /// <inheritdoc/>
+        /// <inheritdoc />
         public IDictionary<string, string> Parse(Stream stream)
         {
             using (var streamReader = new StreamReader(stream))
-            using (var jsonReader = new JsonTextReader(new StreamReader(stream)))
+            using (var jsonReader = new JsonTextReader(streamReader))
             {
                 jsonReader.DateParseHandling = DateParseHandling.None;
                 JObject jsonConfig = JObject.Load(jsonReader);

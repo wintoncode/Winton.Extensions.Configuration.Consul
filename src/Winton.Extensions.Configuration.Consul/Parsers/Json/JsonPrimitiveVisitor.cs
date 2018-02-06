@@ -14,7 +14,7 @@ namespace Winton.Extensions.Configuration.Consul.Parsers.Json
         private readonly Stack<string> _context = new Stack<string>();
 
         /// <summary>
-        /// Recursively visits each primitive of the JSON object using depth-first traversal.
+        ///     Recursively visits each primitive of the JSON object using depth-first traversal.
         /// </summary>
         /// <param name="jObject">The jObject to visit.</param>
         /// <returns>A KV pair for the full path to the property and its value</returns>
@@ -28,10 +28,24 @@ namespace Winton.Extensions.Configuration.Consul.Parsers.Json
             return array.SelectMany((token, index) => VisitProperty(index.ToString(), token)).ToList();
         }
 
+        private ICollection<KeyValuePair<string, string>> VisitPrimitive(JToken primitive)
+        {
+            if (_context.Count == 0)
+            {
+                throw new Exception("Error visiting primitive, the context was empty.");
+            }
+
+            string key = ConfigurationPath.Combine(_context.Reverse());
+            return new[]
+            {
+                new KeyValuePair<string, string>(key, primitive.ToString())
+            };
+        }
+
         private ICollection<KeyValuePair<string, string>> VisitProperty(string key, JToken token)
         {
             _context.Push(key);
-            var primitives = VisitToken(token);
+            ICollection<KeyValuePair<string, string>> primitives = VisitToken(token);
             _context.Pop();
             return primitives.ToList();
         }
@@ -55,17 +69,6 @@ namespace Winton.Extensions.Configuration.Consul.Parsers.Json
                 default:
                     throw new FormatException($"Error parsing JSON. {token.Type} is not a supported token.");
             }
-        }
-
-        private ICollection<KeyValuePair<string, string>> VisitPrimitive(JToken primitive)
-        {
-            if (_context.Count == 0)
-            {
-                throw new Exception("You're yielding so the context has changed by that time");
-            }
-
-            var key = ConfigurationPath.Combine(_context.Reverse());
-            return new[] { new KeyValuePair<string, string>(key, primitive.ToString()) };
         }
     }
 }
