@@ -5,8 +5,10 @@ using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Threading.Tasks;
+using Consul;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Primitives;
+using Winton.Extensions.Configuration.Consul.Extensions;
 
 namespace Winton.Extensions.Configuration.Consul
 {
@@ -51,12 +53,27 @@ namespace Winton.Extensions.Configuration.Consul
             }
         }
 
+        private Dictionary<string, string> ConvertResultToDictionary(QueryResult<KVPair> queryResult)
+        {
+            if (!queryResult.HasValue())
+            {
+                return new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
+            }
+
+            using (var configStream = new MemoryStream(queryResult.Value()))
+            {
+                return new Dictionary<string, string>(
+                    _source.Parser.Parse(configStream),
+                    StringComparer.OrdinalIgnoreCase);
+            }
+        }
+
         private async Task DoLoad(bool reloading)
         {
             try
             {
-                IConfigQueryResult configQueryResult = await _consulConfigClient.GetConfig().ConfigureAwait(false);
-                if (!configQueryResult.Exists && !_source.Optional)
+                QueryResult<KVPair> queryResult = await _consulConfigClient.GetConfig().ConfigureAwait(false);
+                if (!queryResult.HasValue() && !_source.Optional)
                 {
                     if (!reloading)
                     {
@@ -68,36 +85,15 @@ namespace Winton.Extensions.Configuration.Consul
                     return;
                 }
 
-                LoadIntoMemory(configQueryResult);
+                Data = ConvertResultToDictionary(queryResult);
             }
             catch (Exception exception)
             {
-                HandleLoadException(exception);
-            }
-        }
-
-        private void HandleLoadException(Exception exception)
-        {
-            var exceptionContext = new ConsulLoadExceptionContext(_source, exception);
-            _source.OnLoadException?.Invoke(exceptionContext);
-            if (!exceptionContext.Ignore)
-            {
-                throw exception;
-            }
-        }
-
-        private void LoadIntoMemory(IConfigQueryResult configQueryResult)
-        {
-            if (!configQueryResult.Exists)
-            {
-                Data = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
-            }
-            else
-            {
-                using (var configStream = new MemoryStream(configQueryResult.Value))
+                var exceptionContext = new ConsulLoadExceptionContext(_source, exception);
+                _source.OnLoadException?.Invoke(exceptionContext);
+                if (!exceptionContext.Ignore)
                 {
-                    IDictionary<string, string> parsedData = _source.Parser.Parse(configStream);
-                    Data = new Dictionary<string, string>(parsedData, StringComparer.OrdinalIgnoreCase);
+                    throw;
                 }
             }
         }

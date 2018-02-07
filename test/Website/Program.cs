@@ -7,7 +7,7 @@ namespace Winton.Extensions.Configuration.Consul.Website
     {
         public static void Main(string[] args)
         {
-            var host = new WebHostBuilder()
+            IWebHost host = new WebHostBuilder()
                 .UseKestrel()
                 .UseContentRoot(Directory.GetCurrentDirectory())
                 .UseIISIntegration()

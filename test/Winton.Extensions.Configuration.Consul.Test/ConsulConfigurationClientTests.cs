@@ -17,7 +17,6 @@ namespace Winton.Extensions.Configuration.Consul
         private CancellationTokenSource _cancellationTokenSource;
         private Mock<IConsulClientFactory> _consulClientFactoryMock;
         private Mock<IConsulClient> _consulClientMock;
-
         private ConsulConfigurationClient _consulConfigurationClient;
         private Mock<IConsulConfigurationSource> _consulConfigurationSourceMock;
         private Mock<IKVEndpoint> _kvMock;
@@ -110,7 +109,7 @@ namespace Winton.Extensions.Configuration.Consul
             {
                 StatusCode = statusCode
             };
-            IConfigQueryResult configQueryResult = await SimulateGet(result);
+            QueryResult<KVPair> configQueryResult = await SimulateGet(result);
 
             Assert.That(configQueryResult, Is.Not.Null);
         }
@@ -257,7 +256,7 @@ namespace Winton.Extensions.Configuration.Consul
             return await configChangedCompletion.Task;
         }
 
-        private async Task<IConfigQueryResult> SimulateGet(QueryResult<KVPair> result)
+        private async Task<QueryResult<KVPair>> SimulateGet(QueryResult<KVPair> result)
         {
             _kvMock
                 .Setup(kv => kv.Get(_Key, It.IsAny<QueryOptions>(), _cancellationToken))
