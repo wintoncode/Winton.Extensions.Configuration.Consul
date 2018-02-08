@@ -13,12 +13,7 @@ namespace Winton.Extensions.Configuration.Consul.Parsers.Json
     {
         private readonly Stack<string> _context = new Stack<string>();
 
-        /// <summary>
-        ///     Recursively visits each primitive of the JSON object using depth-first traversal.
-        /// </summary>
-        /// <param name="jObject">The jObject to visit.</param>
-        /// <returns>A KV pair for the full path to the property and its value</returns>
-        public ICollection<KeyValuePair<string, string>> VisitJObject(JObject jObject)
+        internal ICollection<KeyValuePair<string, string>> VisitJObject(JObject jObject)
         {
             return jObject.Properties().SelectMany(property => VisitProperty(property.Name, property.Value)).ToList();
         }

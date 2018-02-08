@@ -4,16 +4,15 @@ using System.IO;
 using System.Linq;
 using System.Net;
 using Consul;
+using FluentAssertions;
 using Microsoft.Extensions.Configuration;
 using Moq;
-using NUnit.Framework;
 using Winton.Extensions.Configuration.Consul.Parsers;
+using Xunit;
 
 namespace Winton.Extensions.Configuration.Consul
 {
-    [TestFixture]
-    [TestOf(nameof(ConsulConfigurationProvider))]
-    internal class ConsulConfigurationProviderTests
+    public class ConsulConfigurationProviderTests
     {
         private readonly Mock<IConfigurationParser> _configParserMock =
             new Mock<IConfigurationParser>(MockBehavior.Strict);
@@ -26,35 +25,37 @@ namespace Winton.Extensions.Configuration.Consul
 
         private ConsulConfigurationProvider _consulConfigProvider;
 
-        internal sealed class Constructor : ConsulConfigurationProviderTests
+        public sealed class Constructor : ConsulConfigurationProviderTests
         {
-            [Test]
+            [Fact]
             public void ShouldThrowIfParserIsNull()
             {
                 _consulConfigSourceMock.Setup(ccs => ccs.Parser).Returns((IConfigurationParser)null);
 
-                Assert.That(
+                // ReSharper disable once ObjectCreationAsStatement
+                Action constructing =
                     () =>
-                        new ConsulConfigurationProvider(_consulConfigSourceMock.Object, _consulConfigClientMock.Object),
-                    Throws.TypeOf<ArgumentNullException>()
-                          .And.Message.Contains(nameof(_consulConfigSourceMock.Object.Parser)));
+                        new ConsulConfigurationProvider(_consulConfigSourceMock.Object, _consulConfigClientMock.Object);
+
+                constructing.ShouldThrow<ArgumentNullException>()
+                            .And.Message.Should().Contain(nameof(_consulConfigSourceMock.Object.Parser));
             }
         }
 
-        internal sealed class Load : ConsulConfigurationProviderTests
+        public sealed class Load : ConsulConfigurationProviderTests
         {
-            [SetUp]
-            public void SetUp()
+            public Load()
             {
                 _consulConfigSourceMock.Setup(ccs => ccs.Parser).Returns(_configParserMock.Object);
                 _consulConfigSourceMock.Setup(ccs => ccs.ReloadOnChange).Returns(false);
 
-                _consulConfigProvider =
-                    new ConsulConfigurationProvider(_consulConfigSourceMock.Object, _consulConfigClientMock.Object);
+                _consulConfigProvider = new ConsulConfigurationProvider(
+                    _consulConfigSourceMock.Object,
+                    _consulConfigClientMock.Object);
             }
 
-            [Test]
-            public void ShouldCallSourceOnLoadExceptionActionWhenException()
+            [Fact]
+            private void ShouldCallSourceOnLoadExceptionActionWhenException()
             {
                 var calledOnLoadException = false;
 
@@ -70,11 +71,11 @@ namespace Winton.Extensions.Configuration.Consul
 
                 _consulConfigProvider.Load();
 
-                Assert.That(calledOnLoadException, Is.True);
+                calledOnLoadException.Should().BeTrue();
             }
 
-            [Test]
-            public void ShouldHaveEmptyDataIfConfigDoesNotExistAndIsOptional()
+            [Fact]
+            private void ShouldHaveEmptyDataIfConfigDoesNotExistAndIsOptional()
             {
                 _consulConfigSourceMock.Setup(ccs => ccs.Optional).Returns(true);
                 _consulConfigClientMock
@@ -83,13 +84,11 @@ namespace Winton.Extensions.Configuration.Consul
 
                 _consulConfigProvider.Load();
 
-                Assert.That(
-                    _consulConfigProvider.GetChildKeys(Enumerable.Empty<string>(), string.Empty),
-                    Is.EqualTo(Enumerable.Empty<string>()).AsCollection);
+                _consulConfigProvider.GetChildKeys(Enumerable.Empty<string>(), string.Empty).Should().BeEmpty();
             }
 
-            [Test]
-            public void ShouldNotParseIfConfigBytesIsNull()
+            [Fact]
+            private void ShouldNotParseIfConfigBytesIsNull()
             {
                 _consulConfigSourceMock.Setup(ccs => ccs.Optional).Returns(true);
                 _consulConfigClientMock
@@ -103,13 +102,12 @@ namespace Winton.Extensions.Configuration.Consul
 
                 _consulConfigProvider.Load();
 
-                Assert.That(
-                    () => _configParserMock.Verify(cp => cp.Parse(It.IsAny<MemoryStream>()), Times.Never),
-                    Throws.Nothing);
+                Action verifying = () => _configParserMock.Verify(cp => cp.Parse(It.IsAny<MemoryStream>()), Times.Never);
+                verifying.ShouldNotThrow();
             }
 
-            [Test]
-            public void ShouldNotThrowExceptionIfOnLoadExceptionIsSetToIgnore()
+            [Fact]
+            private void ShouldNotThrowExceptionIfOnLoadExceptionIsSetToIgnore()
             {
                 _consulConfigClientMock.Setup(ccc => ccc.GetConfig())
                                        .ThrowsAsync(new Exception("Failed to load from Consul agent"));
@@ -117,16 +115,17 @@ namespace Winton.Extensions.Configuration.Consul
                     .Setup(ccs => ccs.OnLoadException)
                     .Returns(exceptionContext => { exceptionContext.Ignore = true; });
 
-                Assert.That(() => _consulConfigProvider.Load(), Throws.Nothing);
+                Action loading = () => _consulConfigProvider.Load();
+                loading.ShouldNotThrow();
             }
 
-            [Test]
-            [TestCase("Key", "Key")]
-            [TestCase("KEY", "key", TestName = "ShouldParseLoadedConfigIntoCaseInsensitiveDictionary")]
-            public void ShouldParseLoadedConfigIntoDictionary(string actualKey, string lookupKey)
+            [Theory]
+            [InlineData("Key", "Key")]
+            [InlineData("KEY", "key")]
+            private void ShouldParseLoadedConfigIntoDictionary(string key, string lookupKey)
             {
                 _configParserMock.Setup(cp => cp.Parse(It.IsAny<MemoryStream>()))
-                                 .Returns(new Dictionary<string, string> { { actualKey, "Value" } });
+                                 .Returns(new Dictionary<string, string> { { key, "Value" } });
                 _consulConfigClientMock
                     .Setup(ccc => ccc.GetConfig())
                     .ReturnsAsync(
@@ -138,14 +137,14 @@ namespace Winton.Extensions.Configuration.Consul
 
                 _consulConfigProvider.Load();
 
-                _consulConfigProvider.TryGet(lookupKey, out string actualValue);
-                Assert.That(actualValue, Is.EqualTo("Value"));
+                _consulConfigProvider.TryGet(lookupKey, out string value);
+                value.Should().Be("Value");
             }
 
-            [Test]
-            public void ShouldSetExceptionInLoadExceptionContextWhenExceptionDuringLoad()
+            [Fact]
+            private void ShouldSetExceptionInLoadExceptionContextWhenExceptionDuringLoad()
             {
-                ConsulLoadExceptionContext actualExceptionContext = null;
+                ConsulLoadExceptionContext exceptionContext = null;
                 var expectedException = new Exception("Failed to load from Consul agent");
 
                 _consulConfigClientMock.Setup(ccc => ccc.GetConfig()).ThrowsAsync(expectedException);
@@ -155,18 +154,18 @@ namespace Winton.Extensions.Configuration.Consul
                         context =>
                         {
                             context.Ignore = true;
-                            actualExceptionContext = context;
+                            exceptionContext = context;
                         });
 
                 _consulConfigProvider.Load();
 
-                Assert.That(actualExceptionContext.Exception, Is.SameAs(expectedException));
+                exceptionContext.Exception.Should().BeSameAs(expectedException);
             }
 
-            [Test]
-            public void ShouldSetSourceInLoadExceptionContextWhenExceptionDuringLoad()
+            [Fact]
+            private void ShouldSetSourceInLoadExceptionContextWhenExceptionDuringLoad()
             {
-                ConsulLoadExceptionContext actualExceptionContext = null;
+                ConsulLoadExceptionContext exceptionContext = null;
                 _consulConfigClientMock.Setup(ccc => ccc.GetConfig()).ThrowsAsync(new Exception());
                 _consulConfigSourceMock
                     .Setup(ccs => ccs.OnLoadException)
@@ -174,16 +173,16 @@ namespace Winton.Extensions.Configuration.Consul
                         context =>
                         {
                             context.Ignore = true;
-                            actualExceptionContext = context;
+                            exceptionContext = context;
                         });
 
                 _consulConfigProvider.Load();
 
-                Assert.That(actualExceptionContext.Source, Is.SameAs(_consulConfigSourceMock.Object));
+                exceptionContext.Source.Should().BeSameAs(_consulConfigSourceMock.Object);
             }
 
-            [Test]
-            public void ShouldThrowExceptionIfOnLoadExceptionDoesNotSetIgnoreWhenExceptionDuringLoad()
+            [Fact]
+            private void ShouldThrowExceptionIfOnLoadExceptionDoesNotSetIgnoreWhenExceptionDuringLoad()
             {
                 _consulConfigClientMock.Setup(ccc => ccc.GetConfig())
                                        .ThrowsAsync(new Exception("Error"));
@@ -191,13 +190,12 @@ namespace Winton.Extensions.Configuration.Consul
                     .Setup(ccs => ccs.OnLoadException)
                     .Returns(exceptionContext => { exceptionContext.Ignore = false; });
 
-                Assert.That(
-                    () => _consulConfigProvider.Load(),
-                    Throws.TypeOf<Exception>().And.Message.Matches("Error"));
+                Action loading = _consulConfigProvider.Invoking(ccp => ccp.Load());
+                loading.ShouldThrow<Exception>().WithMessage("Error");
             }
 
-            [Test]
-            public void ShouldThrowIfConfigDoesNotExistAndIsNotOptonalWhenLoad()
+            [Fact]
+            private void ShouldThrowIfConfigDoesNotExistAndIsNotOptonalWhenLoad()
             {
                 _consulConfigSourceMock.Setup(ccs => ccs.Optional).Returns(false);
                 _consulConfigClientMock
@@ -208,19 +206,17 @@ namespace Winton.Extensions.Configuration.Consul
                     .Setup(ccs => ccs.OnLoadException)
                     .Returns(context => context.Ignore = false);
 
-                Assert.That(
-                    () => _consulConfigProvider.Load(),
-                    Throws.TypeOf<Exception>().And.Message.Matches(
-                        "The configuration for key Test was not found and is not optional."));
+                Action loading = _consulConfigProvider.Invoking(ccp => ccp.Load());
+                loading.ShouldThrow<Exception>()
+                       .WithMessage("The configuration for key Test was not found and is not optional.");
             }
         }
 
-        internal sealed class Reload : ConsulConfigurationProviderTests
+        public sealed class Reload : ConsulConfigurationProviderTests
         {
-            private ConfigurationReloadToken _firstChangeToken;
+            private readonly ConfigurationReloadToken _firstChangeToken;
 
-            [SetUp]
-            public void SetUp()
+            public Reload()
             {
                 _firstChangeToken = new ConfigurationReloadToken();
                 _consulConfigClientMock
@@ -236,8 +232,8 @@ namespace Winton.Extensions.Configuration.Consul
                     _consulConfigClientMock.Object);
             }
 
-            [Test]
-            public void ShouldNotOverwriteNonOptionalConfigIfDoesNotExist()
+            [Fact]
+            private void ShouldNotOverwriteNonOptionalConfigIfDoesNotExist()
             {
                 _consulConfigSourceMock.Setup(ccs => ccs.Optional).Returns(false);
                 _consulConfigClientMock
@@ -257,13 +253,13 @@ namespace Winton.Extensions.Configuration.Consul
 
                 _firstChangeToken.OnReload();
 
-                Assert.That(_consulConfigProvider.TryGet("Key", out string _), Is.True);
+                _consulConfigProvider.TryGet("Key", out string _).Should().BeTrue();
             }
 
-            [Test]
-            [TestCase(false, TestName = "ShouldNotThrowIfDoesNotExistOnReloadWhenConfigOptional")]
-            [TestCase(false, TestName = "ShouldNotThrowIfDoesNotExistOnReloadWhenConfigIsNotOptional")]
-            public void ShouldNotThrowIfDoesNotExist(bool optional)
+            [Theory]
+            [InlineData(true)]
+            [InlineData(false)]
+            private void ShouldNotThrowIfDoesNotExist(bool optional)
             {
                 _consulConfigSourceMock.Setup(ccs => ccs.Optional).Returns(optional);
                 _consulConfigSourceMock.Setup(ccs => ccs.ReloadOnChange).Returns(true);
@@ -271,29 +267,33 @@ namespace Winton.Extensions.Configuration.Consul
                     .Setup(ccc => ccc.GetConfig())
                     .ReturnsAsync(new QueryResult<KVPair> { StatusCode = HttpStatusCode.NotFound });
 
-                Assert.That(_firstChangeToken.OnReload, Throws.Nothing);
+                Action reloading = _firstChangeToken.Invoking(ct => ct.OnReload());
+                reloading.ShouldNotThrow();
             }
 
-            [Test]
-            public void ShouldReloadConfigIfReloadOnChangeAndDataInConsulHasChanged()
+            [Fact]
+            private void ShouldReloadConfigIfReloadOnChangeAndDataInConsulHasChanged()
             {
+                _consulConfigSourceMock.Setup(ccs => ccs.Optional).Returns(true);
                 _consulConfigClientMock
                     .Setup(ccc => ccc.GetConfig())
                     .ReturnsAsync(new QueryResult<KVPair> { StatusCode = HttpStatusCode.OK });
 
                 _firstChangeToken.OnReload();
 
-                Assert.That(() => _consulConfigClientMock.Verify(ccc => ccc.GetConfig()), Throws.Nothing);
+                Action verifying = () => _consulConfigClientMock.Verify(ccc => ccc.GetConfig(), Times.Once);
+                verifying.ShouldNotThrow();
             }
 
-            [Test]
-            public void ShouldWatchForChangesIfSourceReloadOnChangesIsTrue()
+            [Fact]
+            private void ShouldWatchForChangesIfSourceReloadOnChangesIsTrue()
             {
-                Assert.That(
+                Action verifying =
                     () =>
                         _consulConfigClientMock.Verify(
-                            ccs => ccs.Watch(_consulConfigSourceMock.Object.OnWatchException)),
-                    Throws.Nothing);
+                            ccs => ccs.Watch(_consulConfigSourceMock.Object.OnWatchException),
+                            Times.Once);
+                verifying.ShouldNotThrow();
             }
         }
     }

@@ -1,37 +1,41 @@
 using System;
 using System.Collections.Generic;
+using FluentAssertions;
 using Newtonsoft.Json.Linq;
-using NUnit.Framework;
+using Xunit;
 
 namespace Winton.Extensions.Configuration.Consul.Parsers.Json
 {
-    [TestFixture]
-    internal sealed class JsonFlattenerTests
+    public class JsonFlattenerTests
     {
-        [Test]
-        public void ShouldFlattenJObjectToCaseInsensitiveDictionary()
+        public sealed class Flatten : JsonFlattenerTests
         {
-            const string key = "Key";
-            const string value = "Value";
-            var jObject = new JObject(new JProperty(key, new JValue(value)));
+            [Theory]
+            [InlineData("Key")]
+            [InlineData("key")]
+            [InlineData("KEY")]
+            private void ShouldFlattenJObjectToCaseInsensitiveDictionary(string lookupKey)
+            {
+                var jObject = new JObject(new JProperty("Key", new JValue("Value")));
 
-            IDictionary<string, string> flattenedObject = jObject.Flatten();
+                IDictionary<string, string> flattenedObject = jObject.Flatten();
 
-            Assert.That(flattenedObject.ContainsKey(key.ToUpper()));
-            Assert.That(flattenedObject.ContainsKey(key.ToLower()));
-            Assert.That(flattenedObject[key], Is.EqualTo(value));
-        }
+                flattenedObject[lookupKey].Should().Be("Value");
+            }
 
-        [Test]
-        public void ShouldThrowIfDuplicateKeyWhenFlattened()
-        {
-            const string key = "Key";
-            const string value = "Value";
-            var jObject = new JObject(
-                new JProperty(key.ToUpper(), new JValue(value)),
-                new JProperty(key.ToLower(), new JValue(value)));
+            [Theory]
+            [InlineData("Key", "key")]
+            [InlineData("Key", "KEY")]
+            private void ShouldThrowIfDuplicateKeyWhenFlattened(string key1, string key2)
+            {
+                var jObject = new JObject(
+                    new JProperty(key1, new JValue("Value")),
+                    new JProperty(key2, new JValue("Value")));
 
-            Assert.That(() => jObject.Flatten(), Throws.TypeOf<FormatException>());
+                Action flattening = () => jObject.Flatten();
+
+                flattening.ShouldThrow<FormatException>();
+            }
         }
     }
 }
