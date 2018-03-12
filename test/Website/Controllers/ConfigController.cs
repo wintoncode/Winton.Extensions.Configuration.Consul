@@ -1,4 +1,3 @@
-using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Configuration;
 
@@ -7,13 +6,11 @@ namespace Winton.Extensions.Configuration.Consul.Website.Controllers
     [Route("[controller]")]
     public sealed class ConfigController : Controller
     {
-        private readonly IConfigurationRoot _configurationRoot;
-        private readonly IHostingEnvironment _hostingEnvironment;
+        private readonly IConfiguration _configurationRoot;
 
-        public ConfigController(IConfigurationRoot configuration, IHostingEnvironment hostingEnvironment)
+        public ConfigController(IConfiguration configuration)
         {
             _configurationRoot = configuration;
-            _hostingEnvironment = hostingEnvironment;
         }
 
         [HttpGet("{key}")]

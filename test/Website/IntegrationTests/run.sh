@@ -1,5 +1,7 @@
 #! /bin/bash
 
+set -e
+
 pushd $( dirname $0 )
 
 dotnet publish ../ --configuration Release
