@@ -37,7 +37,7 @@ namespace Winton.Extensions.Configuration.Consul
                     () =>
                         new ConsulConfigurationProvider(_consulConfigSourceMock.Object, _consulConfigClientMock.Object);
 
-                constructing.ShouldThrow<ArgumentNullException>()
+                constructing.Should().Throw<ArgumentNullException>()
                             .And.Message.Should().Contain(nameof(_consulConfigSourceMock.Object.Parser));
             }
         }
@@ -103,7 +103,7 @@ namespace Winton.Extensions.Configuration.Consul
                 _consulConfigProvider.Load();
 
                 Action verifying = () => _configParserMock.Verify(cp => cp.Parse(It.IsAny<MemoryStream>()), Times.Never);
-                verifying.ShouldNotThrow();
+                verifying.Should().NotThrow();
             }
 
             [Fact]
@@ -116,7 +116,7 @@ namespace Winton.Extensions.Configuration.Consul
                     .Returns(exceptionContext => { exceptionContext.Ignore = true; });
 
                 Action loading = () => _consulConfigProvider.Load();
-                loading.ShouldNotThrow();
+                loading.Should().NotThrow();
             }
 
             [Theory]
@@ -191,7 +191,7 @@ namespace Winton.Extensions.Configuration.Consul
                     .Returns(exceptionContext => { exceptionContext.Ignore = false; });
 
                 Action loading = _consulConfigProvider.Invoking(ccp => ccp.Load());
-                loading.ShouldThrow<Exception>().WithMessage("Error");
+                loading.Should().Throw<Exception>().WithMessage("Error");
             }
 
             [Fact]
@@ -207,7 +207,7 @@ namespace Winton.Extensions.Configuration.Consul
                     .Returns(context => context.Ignore = false);
 
                 Action loading = _consulConfigProvider.Invoking(ccp => ccp.Load());
-                loading.ShouldThrow<Exception>()
+                loading.Should().Throw<Exception>()
                        .WithMessage("The configuration for key Test was not found and is not optional.");
             }
         }
@@ -268,7 +268,7 @@ namespace Winton.Extensions.Configuration.Consul
                     .ReturnsAsync(new QueryResult<KVPair> { StatusCode = HttpStatusCode.NotFound });
 
                 Action reloading = _firstChangeToken.Invoking(ct => ct.OnReload());
-                reloading.ShouldNotThrow();
+                reloading.Should().NotThrow();
             }
 
             [Fact]
@@ -282,7 +282,7 @@ namespace Winton.Extensions.Configuration.Consul
                 _firstChangeToken.OnReload();
 
                 Action verifying = () => _consulConfigClientMock.Verify(ccc => ccc.GetConfig(), Times.Once);
-                verifying.ShouldNotThrow();
+                verifying.Should().NotThrow();
             }
 
             [Fact]
@@ -293,7 +293,7 @@ namespace Winton.Extensions.Configuration.Consul
                         _consulConfigClientMock.Verify(
                             ccs => ccs.Watch(_consulConfigSourceMock.Object.OnWatchException),
                             Times.Once);
-                verifying.ShouldNotThrow();
+                verifying.Should().NotThrow();
             }
         }
     }

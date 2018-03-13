@@ -60,7 +60,7 @@ namespace Winton.Extensions.Configuration.Consul
                 // ReSharper disable once ObjectCreationAsStatement
                 Action constructing = () => new ConsulConfigurationSource(key, default(CancellationToken));
 
-                constructing.ShouldThrow<ArgumentNullException>().And.Message.Should().Contain("key");
+                constructing.Should().Throw<ArgumentNullException>().And.Message.Should().Contain("key");
             }
         }
     }
