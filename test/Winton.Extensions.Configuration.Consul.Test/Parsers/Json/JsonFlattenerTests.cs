@@ -34,7 +34,7 @@ namespace Winton.Extensions.Configuration.Consul.Parsers.Json
 
                 Action flattening = () => jObject.Flatten();
 
-                flattening.ShouldThrow<FormatException>();
+                flattening.Should().Throw<FormatException>();
             }
         }
     }

@@ -62,7 +62,7 @@ namespace Winton.Extensions.Configuration.Consul
                 await _consulConfigurationClient.GetConfig();
 
                 Action verifying = () => _kvMock.Verify(kv => kv.Get("Test", null, _cancellationToken), Times.Once);
-                verifying.ShouldNotThrow();
+                verifying.Should().NotThrow();
             }
 
             [Theory]
@@ -95,7 +95,7 @@ namespace Winton.Extensions.Configuration.Consul
 
                 Func<Task> gettingConfig = _consulConfigurationClient.Awaiting(ccc => ccc.GetConfig());
 
-                gettingConfig.ShouldThrow<Exception>()
+                gettingConfig.Should().Throw<Exception>()
                              .WithMessage("Error loading configuration from consul. Status code: BadRequest.");
             }
 
@@ -108,7 +108,7 @@ namespace Winton.Extensions.Configuration.Consul
 
                 Func<Task> gettingConfig = _consulConfigurationClient.Awaiting(ccc => ccc.GetConfig());
 
-                gettingConfig.ShouldThrow<WebException>().WithMessage("Failed to connect to Consul client");
+                gettingConfig.Should().Throw<WebException>().WithMessage("Failed to connect to Consul client");
             }
         }
 
@@ -164,7 +164,7 @@ namespace Winton.Extensions.Configuration.Consul
             {
                 Func<Task<bool>> watching = () => SimulateConfigChange(1);
 
-                watching.ShouldNotThrow();
+                watching.Should().NotThrow();
             }
 
             [Fact]
