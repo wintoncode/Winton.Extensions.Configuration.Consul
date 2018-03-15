@@ -1,4 +1,6 @@
 using System;
+using System.Collections.Generic;
+using System.Linq;
 using System.Net;
 using System.Threading;
 using System.Threading.Tasks;
@@ -118,18 +120,21 @@ namespace Winton.Extensions.Configuration.Consul
             private async Task ShouldCallReloadOnChangeTokenIfIndexForKeyHasUpdated()
             {
                 var configChangedCompletion = new TaskCompletionSource<bool>();
+                var getKvTaskSource = new TaskCompletionSource<QueryResult<KVPair>>();
                 _kvMock
                     .Setup(kv => kv.Get("Test", It.IsAny<QueryOptions>(), _cancellationToken))
-                    .ReturnsAsync(
-                        new QueryResult<KVPair>
-                        {
-                            LastIndex = 1,
-                            StatusCode = HttpStatusCode.OK
-                        });
+                    .Returns(getKvTaskSource.Task);
+
                 ChangeToken.OnChange(
                     () => _consulConfigurationClient.Watch(null),
                     () => configChangedCompletion.SetResult(true));
 
+                getKvTaskSource.SetResult(
+                    new QueryResult<KVPair>
+                        {
+                            LastIndex = 1,
+                            StatusCode = HttpStatusCode.OK
+                        });
                 bool completed = await configChangedCompletion.Task;
 
                 completed.Should().BeTrue();
@@ -141,10 +146,11 @@ namespace Winton.Extensions.Configuration.Consul
                 Exception actualException = null;
                 var expectedException = new Exception();
                 var configChangedCompletion = new TaskCompletionSource<bool>();
+                var getKvTaskSource = new TaskCompletionSource<QueryResult<KVPair>>();
 
                 _kvMock
                     .Setup(kv => kv.Get("Test", It.IsAny<QueryOptions>(), _cancellationToken))
-                    .ThrowsAsync(expectedException);
+                    .Returns(getKvTaskSource.Task);
 
                 _consulConfigurationClient.Watch(
                     exceptionContext =>
@@ -154,129 +160,147 @@ namespace Winton.Extensions.Configuration.Consul
                         configChangedCompletion.SetResult(true);
                     });
 
+                getKvTaskSource.SetException(expectedException);
                 await configChangedCompletion.Task;
 
                 actualException.Should().BeSameAs(expectedException);
             }
 
             [Fact]
-            private void ShouldUseLongPollingToPollForChanges()
+            private async Task ShouldUseLongPollingToPollForChanges()
             {
-                Func<Task<bool>> watching = () => SimulateConfigChange(1);
+                var kvTaskSources = Enumerable.Range(0, 10).Select(i => new TaskCompletionSource<QueryResult<KVPair>>()).ToArray();
+                var kvTaskQueue = new Queue<Task<QueryResult<KVPair>>>(kvTaskSources.Select(kts => kts.Task));
 
-                watching.Should().NotThrow();
-            }
-
-            [Fact]
-            private async Task ShouldUseLongPollingWithLatestIndexFromGet()
-            {
-                ulong lastWaitIndex = 0;
-                const ulong lastIndex = 1;
-                var completion = new TaskCompletionSource<bool>();
-
-                // Get config once which should update the latest index
                 _kvMock
                     .Setup(kv => kv.Get("Test", It.IsAny<QueryOptions>(), _cancellationToken))
-                    .ReturnsAsync(
+                    .Returns(() => kvTaskQueue.Dequeue());
+
+                var watchCompletion = new TaskCompletionSource<bool>();
+                _consulConfigurationClient
+                    .Watch(exceptionContext =>
+                    {
+                        watchCompletion.SetResult(false);
+                        throw exceptionContext.Exception;
+                    })
+                    .RegisterChangeCallback(o => watchCompletion.SetResult(true), new object());
+
+                // The first 5 long polling calls return an unchanged last index
+                foreach (int i in Enumerable.Range(0, 5))
+                {
+                    kvTaskSources[i].SetResult(
                         new QueryResult<KVPair>
+                            {
+                                LastIndex = 0,
+                                StatusCode = HttpStatusCode.OK
+                            });
+                }
+
+                // The 6th call returns an updated index indicating that the config has changed
+                kvTaskSources[5].SetResult(
+                    new QueryResult<KVPair>
                         {
                             LastIndex = 1,
                             StatusCode = HttpStatusCode.OK
                         });
 
-                await _consulConfigurationClient.GetConfig();
+               await watchCompletion.Task;
 
-                var result = new QueryResult<KVPair>
-                {
-                    LastIndex = lastIndex + 1,
-                    StatusCode = HttpStatusCode.OK
-                };
+                Action verifying = () => _kvMock
+                    .Verify(kv => kv.Get("Test", It.IsAny<QueryOptions>(), _cancellationToken), Times.Exactly(6));
+            }
+
+            [Fact]
+            private async Task ShouldUseLongPollingWithLatestIndexFromGet()
+            {
+                ulong? watchWaitIndex = 0;
+                var getKvTaskSource = new TaskCompletionSource<QueryResult<KVPair>>();
+                var watchKvTaskSource = new TaskCompletionSource<QueryResult<KVPair>>();
+                var kvTaskQueue = new Queue<Task<QueryResult<KVPair>>>(
+                    new List<Task<QueryResult<KVPair>>> { getKvTaskSource.Task, watchKvTaskSource.Task });
+
                 _kvMock
                     .Setup(kv => kv.Get("Test", It.IsAny<QueryOptions>(), _cancellationToken))
-                    .Callback(
-                        (string key, QueryOptions options, CancellationToken cancellationToken) =>
+                    .Returns((string key, QueryOptions options, CancellationToken cancellationToken) =>
+                    {
+                        watchWaitIndex = options?.WaitIndex;
+                        return kvTaskQueue.Dequeue();
+                    });
+
+                getKvTaskSource.SetResult(
+                    new QueryResult<KVPair>
                         {
-                            lastWaitIndex = options.WaitIndex;
-                        })
-                    .ReturnsAsync(result);
+                            LastIndex = 1,
+                            StatusCode = HttpStatusCode.OK
+                        });
 
-                // Calling it a second time should invoke a long polling with the index from the last update
-                _consulConfigurationClient.Watch(null).RegisterChangeCallback(
-                    o => completion.SetResult(true),
-                    new object());
+                // Get config once which should update the latest index
+                await _consulConfigurationClient.GetConfig();
 
-                await completion.Task;
+                // Calling it a second time should invoke a long polling with the index from the previous get call
+                var watchCompletion = new TaskCompletionSource<bool>();
+                _consulConfigurationClient
+                    .Watch(null)
+                    .RegisterChangeCallback(o => watchCompletion.SetResult(true), new object());
 
-                lastWaitIndex.Should().Be(lastIndex);
+                watchKvTaskSource.SetResult(
+                    new QueryResult<KVPair>
+                        {
+                            LastIndex = 2,
+                            StatusCode = HttpStatusCode.OK
+                        });
+                await watchCompletion.Task;
+
+                watchWaitIndex.Should().Be(1);
             }
 
             [Fact]
             private async Task ShouldUseLongPollingWithWaitIndexFromPreviousWatch()
             {
-                ulong lastWaitIndex = 0;
-                const ulong lastIndex = 1;
-                var completion = new TaskCompletionSource<bool>();
+                ulong? waitIndex = 0;
+                var watchKvTaskSource1 = new TaskCompletionSource<QueryResult<KVPair>>();
+                var watchKvTaskSource2 = new TaskCompletionSource<QueryResult<KVPair>>();
+                var kvTaskQueue = new Queue<Task<QueryResult<KVPair>>>(
+                    new List<Task<QueryResult<KVPair>>> { watchKvTaskSource1.Task, watchKvTaskSource2.Task });
 
-                // Simulate the first change in config which generates a new index
-                await SimulateConfigChange(lastIndex);
-
-                var result = new QueryResult<KVPair>
-                {
-                    LastIndex = lastIndex + 1,
-                    StatusCode = HttpStatusCode.OK
-                };
                 _kvMock
                     .Setup(kv => kv.Get("Test", It.IsAny<QueryOptions>(), _cancellationToken))
-                    .Callback(
-                        (string key, QueryOptions options, CancellationToken cancellationToken) =>
-                        {
-                            lastWaitIndex = options.WaitIndex;
-                        })
-                    .ReturnsAsync(result);
+                    .Returns((string key, QueryOptions options, CancellationToken cancellationToken) =>
+                    {
+                        waitIndex = options?.WaitIndex;
+                        return kvTaskQueue.Dequeue();
+                    });
 
-                // Calling it a second time should invoke a long polling with the index from the last update
-                _consulConfigurationClient.Watch(null).RegisterChangeCallback(
-                    o => completion.SetResult(true),
-                    new object());
-
-                await completion.Task;
-
-                lastWaitIndex.Should().Be(lastIndex);
-            }
-
-            private async Task<bool> SimulateConfigChange(ulong lastIndex)
-            {
-                var configChangedCompletion = new TaskCompletionSource<bool>();
-
-                // Initially setup mock with 0 last index so that no changes occur
-                var result = new QueryResult<KVPair>
-                {
-                    LastIndex = 0,
-                    StatusCode = HttpStatusCode.OK
-                };
-                _kvMock
-                    .Setup(kv => kv.Get("Test", It.IsAny<QueryOptions>(), _cancellationToken))
-                    .ReturnsAsync(result);
-
-                // Watch for changes
+                // The KV result initiated by the first watch returns with an updated index of 1
+                var watchCompletion1 = new TaskCompletionSource<bool>();
                 _consulConfigurationClient
-                    .Watch(
-                        exceptionContext =>
+                    .Watch(null)
+                    .RegisterChangeCallback(o => watchCompletion1.SetResult(true), new object());
+
+                watchKvTaskSource1.SetResult(
+                    new QueryResult<KVPair>
                         {
-                            _cancellationTokenSource.Cancel();
-                            configChangedCompletion.SetException(exceptionContext.Exception);
-                        })
-                    .RegisterChangeCallback(
-                        o => configChangedCompletion.SetResult(true),
-                        new object());
+                            LastIndex = 1,
+                            StatusCode = HttpStatusCode.OK
+                        });
+                await watchCompletion1.Task;
 
-                // Update mocked result to return a higher last index, which is what happens when changes occur
-                result.LastIndex = lastIndex;
-                _kvMock
-                    .Setup(kv => kv.Get("Test", It.IsAny<QueryOptions>(), _cancellationToken))
-                    .ReturnsAsync(result);
+                // The KV result from the second watch returns with an updated index so that it can be determined that it ran inside the watch
+                var watchCompletion2 = new TaskCompletionSource<bool>();
+                _consulConfigurationClient
+                    .Watch(null)
+                    .RegisterChangeCallback(o => watchCompletion2.SetResult(true), new object());
 
-                return await configChangedCompletion.Task;
+                watchKvTaskSource2.SetResult(
+                    new QueryResult<KVPair>
+                        {
+                            LastIndex = 2,
+                            StatusCode = HttpStatusCode.OK
+                        });
+                await watchCompletion2.Task;
+
+                // The wait index sent the second time should be the value returned from the first KV result
+                waitIndex.Should().Be(1);
             }
         }
     }
