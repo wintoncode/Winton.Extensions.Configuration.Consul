@@ -1,4 +1,4 @@
-FROM microsoft/aspnetcore:2.0.5
+FROM microsoft/aspnetcore:2.0.6
 
 COPY bin/Release/netcoreapp2.0/publish /app
 WORKDIR /app
