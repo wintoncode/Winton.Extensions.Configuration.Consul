@@ -48,7 +48,7 @@ namespace Winton.Extensions.Configuration.Consul
         public IConfigurationProvider Build(IConfigurationBuilder builder)
         {
             var consulClientFactory = new ConsulClientFactory(this);
-            var consulConfigClient = new ConsulConfigurationClient(consulClientFactory, this);
+            var consulConfigClient = new ConsulConfigurationClient(consulClientFactory);
             return new ConsulConfigurationProvider(this, consulConfigClient);
         }
     }
