@@ -19,7 +19,7 @@ namespace Winton.Extensions.Configuration.Consul
         Task<QueryResult<KVPair[]>> GetConfig(string key, CancellationToken cancellationToken);
 
         /// <summary>Watches for config changes at a specified key.</summary>
-        /// <param name="key">The key whose value should be watched for changes.null</param>
+        /// <param name="key">The key whose value should be watched for changes.</param>
         /// <param name="onException">An action to be invoked if an exception occurs during the watch.</param>
         /// <param name="cancellationToken">A cancellation token that can be used to cancel the operation.</param>
         /// <returns>An <see cref="IChangeToken" /> that will indicated when changes have occured.</returns>
