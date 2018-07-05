@@ -12,22 +12,13 @@ using Xunit;
 
 namespace Winton.Extensions.Configuration.Consul
 {
-    public class ConsulConfigurationClientTests : IDisposable
+    public class ConsulConfigurationClientTests
     {
-        private readonly CancellationToken _cancellationToken;
-        private readonly CancellationTokenSource _cancellationTokenSource;
         private readonly ConsulConfigurationClient _consulConfigurationClient;
         private readonly Mock<IKVEndpoint> _kvMock;
 
         private ConsulConfigurationClientTests()
         {
-            _cancellationTokenSource = new CancellationTokenSource();
-            _cancellationToken = _cancellationTokenSource.Token;
-
-            var consulConfigurationSourceMock = new Mock<IConsulConfigurationSource>(MockBehavior.Strict);
-            consulConfigurationSourceMock.Setup(ccs => ccs.CancellationToken).Returns(_cancellationToken);
-            consulConfigurationSourceMock.Setup(ccs => ccs.Key).Returns("Test");
-
             _kvMock = new Mock<IKVEndpoint>(MockBehavior.Strict);
 
             var consulClientMock = new Mock<IConsulClient>(MockBehavior.Strict);
@@ -36,16 +27,7 @@ namespace Winton.Extensions.Configuration.Consul
             var consulClientFactoryMock = new Mock<IConsulClientFactory>(MockBehavior.Strict);
             consulClientFactoryMock.Setup(ccf => ccf.Create()).Returns(consulClientMock.Object);
 
-            _consulConfigurationClient = new ConsulConfigurationClient(
-                consulClientFactoryMock.Object,
-                consulConfigurationSourceMock.Object);
-        }
-
-        public void Dispose()
-        {
-            // Ensure any background threads that were started are stopped
-            _cancellationTokenSource?.Cancel();
-            _cancellationTokenSource?.Dispose();
+            _consulConfigurationClient = new ConsulConfigurationClient(consulClientFactoryMock.Object);
         }
 
         public sealed class GetConfig : ConsulConfigurationClientTests
@@ -54,16 +36,16 @@ namespace Winton.Extensions.Configuration.Consul
             private async Task ShouldGetConfigAtSpecifiedKey()
             {
                 _kvMock
-                    .Setup(kv => kv.Get("Test", It.IsAny<QueryOptions>(), _cancellationToken))
+                    .Setup(kv => kv.List("Test", It.IsAny<QueryOptions>(), default(CancellationToken)))
                     .ReturnsAsync(
-                        new QueryResult<KVPair>
+                        new QueryResult<KVPair[]>
                         {
                             StatusCode = HttpStatusCode.OK
                         });
 
-                await _consulConfigurationClient.GetConfig();
+                await _consulConfigurationClient.GetConfig("Test", default(CancellationToken));
 
-                Action verifying = () => _kvMock.Verify(kv => kv.Get("Test", null, _cancellationToken), Times.Once);
+                Action verifying = () => _kvMock.Verify(kv => kv.List("Test", null, default(CancellationToken)), Times.Once);
                 verifying.Should().NotThrow();
             }
 
@@ -73,14 +55,15 @@ namespace Winton.Extensions.Configuration.Consul
             private async Task ShouldReturnResultWhenValidResponse(HttpStatusCode statusCode)
             {
                 _kvMock
-                    .Setup(kv => kv.Get("Test", It.IsAny<QueryOptions>(), _cancellationToken))
+                    .Setup(kv => kv.List("Test", It.IsAny<QueryOptions>(), default(CancellationToken)))
                     .ReturnsAsync(
-                        new QueryResult<KVPair>
+                        new QueryResult<KVPair[]>
                         {
                             StatusCode = statusCode
                         });
 
-                QueryResult<KVPair> queryResult = await _consulConfigurationClient.GetConfig();
+                QueryResult<KVPair[]> queryResult = await _consulConfigurationClient
+                    .GetConfig("Test", default(CancellationToken));
 
                 queryResult.Should().NotBeNull();
             }
@@ -88,27 +71,32 @@ namespace Winton.Extensions.Configuration.Consul
             [Fact]
             private void ShouldThrowExceptionWhenBadResponseRecieved()
             {
-                _kvMock.Setup(kv => kv.Get("Test", null, _cancellationToken))
-                       .ReturnsAsync(
-                           new QueryResult<KVPair>
-                           {
-                               StatusCode = HttpStatusCode.BadRequest
-                           });
+                _kvMock
+                    .Setup(kv => kv.List("Test", null, default(CancellationToken)))
+                    .ReturnsAsync(
+                        new QueryResult<KVPair[]>
+                        {
+                            StatusCode = HttpStatusCode.BadRequest
+                        });
 
-                Func<Task> gettingConfig = _consulConfigurationClient.Awaiting(ccc => ccc.GetConfig());
+                Func<Task> gettingConfig = _consulConfigurationClient
+                    .Awaiting(ccc => ccc.GetConfig("Test", default(CancellationToken)));
 
-                gettingConfig.Should().Throw<Exception>()
-                             .WithMessage("Error loading configuration from consul. Status code: BadRequest.");
+                gettingConfig
+                    .Should()
+                    .Throw<Exception>()
+                    .WithMessage("Error loading configuration from consul. Status code: BadRequest.");
             }
 
             [Fact]
             private void ShouldThrowExceptionWhenExceptionalResponseRecieved()
             {
                 _kvMock
-                    .Setup(kv => kv.Get("Test", null, _cancellationToken))
+                    .Setup(kv => kv.List("Test", null, default(CancellationToken)))
                     .ThrowsAsync(new WebException("Failed to connect to Consul client"));
 
-                Func<Task> gettingConfig = _consulConfigurationClient.Awaiting(ccc => ccc.GetConfig());
+                Func<Task> gettingConfig = _consulConfigurationClient
+                    .Awaiting(ccc => ccc.GetConfig("Test", default(CancellationToken)));
 
                 gettingConfig.Should().Throw<WebException>().WithMessage("Failed to connect to Consul client");
             }
@@ -120,17 +108,17 @@ namespace Winton.Extensions.Configuration.Consul
             private async Task ShouldCallReloadOnChangeTokenIfIndexForKeyHasUpdated()
             {
                 var configChangedCompletion = new TaskCompletionSource<bool>();
-                var getKvTaskSource = new TaskCompletionSource<QueryResult<KVPair>>();
+                var getKvTaskSource = new TaskCompletionSource<QueryResult<KVPair[]>>();
                 _kvMock
-                    .Setup(kv => kv.Get("Test", It.IsAny<QueryOptions>(), _cancellationToken))
+                    .Setup(kv => kv.List("Test", It.IsAny<QueryOptions>(), default(CancellationToken)))
                     .Returns(getKvTaskSource.Task);
 
                 ChangeToken.OnChange(
-                    () => _consulConfigurationClient.Watch(null),
+                    () => _consulConfigurationClient.Watch("Test", null, default(CancellationToken)),
                     () => configChangedCompletion.SetResult(true));
 
                 getKvTaskSource.SetResult(
-                    new QueryResult<KVPair>
+                    new QueryResult<KVPair[]>
                         {
                             LastIndex = 1,
                             StatusCode = HttpStatusCode.OK
@@ -146,19 +134,20 @@ namespace Winton.Extensions.Configuration.Consul
                 Exception actualException = null;
                 var expectedException = new Exception();
                 var configChangedCompletion = new TaskCompletionSource<bool>();
-                var getKvTaskSource = new TaskCompletionSource<QueryResult<KVPair>>();
+                var getKvTaskSource = new TaskCompletionSource<QueryResult<KVPair[]>>();
 
                 _kvMock
-                    .Setup(kv => kv.Get("Test", It.IsAny<QueryOptions>(), _cancellationToken))
+                    .Setup(kv => kv.List("Test", It.IsAny<QueryOptions>(), default(CancellationToken)))
                     .Returns(getKvTaskSource.Task);
 
                 _consulConfigurationClient.Watch(
+                    "Test",
                     exceptionContext =>
                     {
                         actualException = exceptionContext.Exception;
-                        _cancellationTokenSource.Cancel();
                         configChangedCompletion.SetResult(true);
-                    });
+                    },
+                    default(CancellationToken));
 
                 getKvTaskSource.SetException(expectedException);
                 await configChangedCompletion.Task;
@@ -169,27 +158,30 @@ namespace Winton.Extensions.Configuration.Consul
             [Fact]
             private async Task ShouldUseLongPollingToPollForChanges()
             {
-                var kvTaskSources = Enumerable.Range(0, 10).Select(i => new TaskCompletionSource<QueryResult<KVPair>>()).ToArray();
-                var kvTaskQueue = new Queue<Task<QueryResult<KVPair>>>(kvTaskSources.Select(kts => kts.Task));
+                var kvTaskSources = Enumerable.Range(0, 10).Select(i => new TaskCompletionSource<QueryResult<KVPair[]>>()).ToArray();
+                var kvTaskQueue = new Queue<Task<QueryResult<KVPair[]>>>(kvTaskSources.Select(kts => kts.Task));
 
                 _kvMock
-                    .Setup(kv => kv.Get("Test", It.IsAny<QueryOptions>(), _cancellationToken))
+                    .Setup(kv => kv.List("Test", It.IsAny<QueryOptions>(), default(CancellationToken)))
                     .Returns(() => kvTaskQueue.Dequeue());
 
                 var watchCompletion = new TaskCompletionSource<bool>();
                 _consulConfigurationClient
-                    .Watch(exceptionContext =>
-                    {
-                        watchCompletion.SetResult(false);
-                        throw exceptionContext.Exception;
-                    })
+                    .Watch(
+                        "Test",
+                        exceptionContext =>
+                        {
+                            watchCompletion.SetResult(false);
+                            throw exceptionContext.Exception;
+                        },
+                        default(CancellationToken))
                     .RegisterChangeCallback(o => watchCompletion.SetResult(true), new object());
 
                 // The first 5 long polling calls return an unchanged last index
                 foreach (int i in Enumerable.Range(0, 5))
                 {
                     kvTaskSources[i].SetResult(
-                        new QueryResult<KVPair>
+                        new QueryResult<KVPair[]>
                             {
                                 LastIndex = 0,
                                 StatusCode = HttpStatusCode.OK
@@ -198,7 +190,7 @@ namespace Winton.Extensions.Configuration.Consul
 
                 // The 6th call returns an updated index indicating that the config has changed
                 kvTaskSources[5].SetResult(
-                    new QueryResult<KVPair>
+                    new QueryResult<KVPair[]>
                         {
                             LastIndex = 1,
                             StatusCode = HttpStatusCode.OK
@@ -207,20 +199,22 @@ namespace Winton.Extensions.Configuration.Consul
                await watchCompletion.Task;
 
                 Action verifying = () => _kvMock
-                    .Verify(kv => kv.Get("Test", It.IsAny<QueryOptions>(), _cancellationToken), Times.Exactly(6));
+                    .Verify(
+                        kv => kv.List("Test", It.IsAny<QueryOptions>(), default(CancellationToken)),
+                        Times.Exactly(6));
             }
 
             [Fact]
             private async Task ShouldUseLongPollingWithLatestIndexFromGet()
             {
                 ulong? watchWaitIndex = 0;
-                var getKvTaskSource = new TaskCompletionSource<QueryResult<KVPair>>();
-                var watchKvTaskSource = new TaskCompletionSource<QueryResult<KVPair>>();
-                var kvTaskQueue = new Queue<Task<QueryResult<KVPair>>>(
-                    new List<Task<QueryResult<KVPair>>> { getKvTaskSource.Task, watchKvTaskSource.Task });
+                var getKvTaskSource = new TaskCompletionSource<QueryResult<KVPair[]>>();
+                var watchKvTaskSource = new TaskCompletionSource<QueryResult<KVPair[]>>();
+                var kvTaskQueue = new Queue<Task<QueryResult<KVPair[]>>>(
+                    new List<Task<QueryResult<KVPair[]>>> { getKvTaskSource.Task, watchKvTaskSource.Task });
 
                 _kvMock
-                    .Setup(kv => kv.Get("Test", It.IsAny<QueryOptions>(), _cancellationToken))
+                    .Setup(kv => kv.List("Test", It.IsAny<QueryOptions>(), default(CancellationToken)))
                     .Returns((string key, QueryOptions options, CancellationToken cancellationToken) =>
                     {
                         watchWaitIndex = options?.WaitIndex;
@@ -228,23 +222,23 @@ namespace Winton.Extensions.Configuration.Consul
                     });
 
                 getKvTaskSource.SetResult(
-                    new QueryResult<KVPair>
+                    new QueryResult<KVPair[]>
                         {
                             LastIndex = 1,
                             StatusCode = HttpStatusCode.OK
                         });
 
                 // Get config once which should update the latest index
-                await _consulConfigurationClient.GetConfig();
+                await _consulConfigurationClient.GetConfig("Test", default(CancellationToken));
 
                 // Calling it a second time should invoke a long polling with the index from the previous get call
                 var watchCompletion = new TaskCompletionSource<bool>();
                 _consulConfigurationClient
-                    .Watch(null)
+                    .Watch("Test", null, default(CancellationToken))
                     .RegisterChangeCallback(o => watchCompletion.SetResult(true), new object());
 
                 watchKvTaskSource.SetResult(
-                    new QueryResult<KVPair>
+                    new QueryResult<KVPair[]>
                         {
                             LastIndex = 2,
                             StatusCode = HttpStatusCode.OK
@@ -258,13 +252,13 @@ namespace Winton.Extensions.Configuration.Consul
             private async Task ShouldUseLongPollingWithWaitIndexFromPreviousWatch()
             {
                 ulong? waitIndex = 0;
-                var watchKvTaskSource1 = new TaskCompletionSource<QueryResult<KVPair>>();
-                var watchKvTaskSource2 = new TaskCompletionSource<QueryResult<KVPair>>();
-                var kvTaskQueue = new Queue<Task<QueryResult<KVPair>>>(
-                    new List<Task<QueryResult<KVPair>>> { watchKvTaskSource1.Task, watchKvTaskSource2.Task });
+                var watchKvTaskSource1 = new TaskCompletionSource<QueryResult<KVPair[]>>();
+                var watchKvTaskSource2 = new TaskCompletionSource<QueryResult<KVPair[]>>();
+                var kvTaskQueue = new Queue<Task<QueryResult<KVPair[]>>>(
+                    new List<Task<QueryResult<KVPair[]>>> { watchKvTaskSource1.Task, watchKvTaskSource2.Task });
 
                 _kvMock
-                    .Setup(kv => kv.Get("Test", It.IsAny<QueryOptions>(), _cancellationToken))
+                    .Setup(kv => kv.List("Test", It.IsAny<QueryOptions>(), default(CancellationToken)))
                     .Returns((string key, QueryOptions options, CancellationToken cancellationToken) =>
                     {
                         waitIndex = options?.WaitIndex;
@@ -274,11 +268,11 @@ namespace Winton.Extensions.Configuration.Consul
                 // The KV result initiated by the first watch returns with an updated index of 1
                 var watchCompletion1 = new TaskCompletionSource<bool>();
                 _consulConfigurationClient
-                    .Watch(null)
+                    .Watch("Test", null, default(CancellationToken))
                     .RegisterChangeCallback(o => watchCompletion1.SetResult(true), new object());
 
                 watchKvTaskSource1.SetResult(
-                    new QueryResult<KVPair>
+                    new QueryResult<KVPair[]>
                         {
                             LastIndex = 1,
                             StatusCode = HttpStatusCode.OK
@@ -288,11 +282,11 @@ namespace Winton.Extensions.Configuration.Consul
                 // The KV result from the second watch returns with an updated index so that it can be determined that it ran inside the watch
                 var watchCompletion2 = new TaskCompletionSource<bool>();
                 _consulConfigurationClient
-                    .Watch(null)
+                    .Watch("Test", null, default(CancellationToken))
                     .RegisterChangeCallback(o => watchCompletion2.SetResult(true), new object());
 
                 watchKvTaskSource2.SetResult(
-                    new QueryResult<KVPair>
+                    new QueryResult<KVPair[]>
                         {
                             LastIndex = 2,
                             StatusCode = HttpStatusCode.OK
