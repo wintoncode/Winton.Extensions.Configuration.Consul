@@ -2,6 +2,7 @@
 // Licensed under the Apache License, Version 2.0. See LICENCE in the project root for license information.
 
 using System;
+using System.Collections.Generic;
 using System.Net;
 using System.Threading;
 using System.Threading.Tasks;
@@ -15,38 +16,36 @@ namespace Winton.Extensions.Configuration.Consul
     {
         private readonly IConsulClientFactory _consulClientFactory;
         private readonly object _lastIndexLock = new object();
-        private readonly IConsulConfigurationSource _source;
 
         private ulong _lastIndex;
         private ConfigurationReloadToken _reloadToken = new ConfigurationReloadToken();
 
-        public ConsulConfigurationClient(IConsulClientFactory consulClientFactory, IConsulConfigurationSource source)
+        public ConsulConfigurationClient(IConsulClientFactory consulClientFactory)
         {
             _consulClientFactory = consulClientFactory;
-            _source = source;
         }
 
-        public async Task<QueryResult<KVPair>> GetConfig()
+        public async Task<QueryResult<KVPair[]>> GetConfig(string key, CancellationToken cancellationToken)
         {
-            QueryResult<KVPair> result = await GetKvPair().ConfigureAwait(false);
+            QueryResult<KVPair[]> result = await GetKvPairs(key, cancellationToken).ConfigureAwait(false);
             UpdateLastIndex(result);
             return result;
         }
 
-        public IChangeToken Watch(Action<ConsulWatchExceptionContext> onException)
+        public IChangeToken Watch(string key, Action<ConsulWatchExceptionContext> onException, CancellationToken cancellationToken)
         {
-            Task.Run(() => PollForChanges(onException));
+            Task.Run(() => PollForChanges(key, onException, cancellationToken));
             return _reloadToken;
         }
 
-        private async Task<QueryResult<KVPair>> GetKvPair(QueryOptions queryOptions = null)
+        private async Task<QueryResult<KVPair[]>> GetKvPairs(string key, CancellationToken cancellationToken, QueryOptions queryOptions = null)
         {
             using (IConsulClient consulClient = _consulClientFactory.Create())
             {
-                QueryResult<KVPair> result =
+                QueryResult<KVPair[]> result =
                     await consulClient
                         .KV
-                        .Get(_source.Key, queryOptions, _source.CancellationToken)
+                        .List(key, queryOptions, cancellationToken)
                         .ConfigureAwait(false);
 
                 switch (result.StatusCode)
@@ -61,7 +60,7 @@ namespace Winton.Extensions.Configuration.Consul
             }
         }
 
-        private async Task<bool> HasValueChanged()
+        private async Task<bool> HasValueChanged(string key, CancellationToken cancellationToken)
         {
             QueryOptions queryOptions;
             lock (_lastIndexLock)
@@ -69,17 +68,17 @@ namespace Winton.Extensions.Configuration.Consul
                 queryOptions = new QueryOptions { WaitIndex = _lastIndex };
             }
 
-            QueryResult<KVPair> result = await GetKvPair(queryOptions).ConfigureAwait(false);
+            QueryResult<KVPair[]> result = await GetKvPairs(key, cancellationToken, queryOptions).ConfigureAwait(false);
             return result != null && UpdateLastIndex(result);
         }
 
-        private async Task PollForChanges(Action<ConsulWatchExceptionContext> onException)
+        private async Task PollForChanges(string key, Action<ConsulWatchExceptionContext> onException, CancellationToken cancellationToken)
         {
-            while (!_source.CancellationToken.IsCancellationRequested)
+            while (!cancellationToken.IsCancellationRequested)
             {
                 try
                 {
-                    if (await HasValueChanged().ConfigureAwait(false))
+                    if (await HasValueChanged(key, cancellationToken).ConfigureAwait(false))
                     {
                         ConfigurationReloadToken previousToken = Interlocked.Exchange(
                             ref _reloadToken,
@@ -90,7 +89,7 @@ namespace Winton.Extensions.Configuration.Consul
                 }
                 catch (Exception exception)
                 {
-                    var exceptionContext = new ConsulWatchExceptionContext(_source, exception);
+                    var exceptionContext = new ConsulWatchExceptionContext(cancellationToken, exception);
                     onException?.Invoke(exceptionContext);
                 }
             }
