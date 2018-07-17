@@ -11,10 +11,10 @@ namespace Winton.Extensions.Configuration.Consul
     /// </summary>
     public sealed class ConsulWatchExceptionContext
     {
-        internal ConsulWatchExceptionContext(IConsulConfigurationSource source, Exception exception)
+        internal ConsulWatchExceptionContext(CancellationToken cancellationToken, Exception exception)
         {
             Exception = exception;
-            Source = source;
+            CancellationToken = cancellationToken;
         }
 
         /// <summary>
@@ -23,9 +23,8 @@ namespace Winton.Extensions.Configuration.Consul
         public Exception Exception { get; }
 
         /// <summary>
-        ///     Gets the <see cref="IConsulConfigurationSource" /> of the provider that caused the exception.
-        ///     Can be used to access the <see cref="CancellationToken" /> which can terminate the watcher.
+        ///     Gets the <see cref="CancellationToken" /> for the watch task which can be used to terminate it.
         /// </summary>
-        public IConsulConfigurationSource Source { get; }
+        public CancellationToken CancellationToken { get; }
     }
 }
