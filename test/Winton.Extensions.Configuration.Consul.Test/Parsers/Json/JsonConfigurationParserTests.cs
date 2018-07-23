@@ -20,7 +20,7 @@ namespace Winton.Extensions.Configuration.Consul.Parsers.Json
             [Theory]
             [InlineData("{\"Key\": \"Value\"}", "Key", "Value")]
             [InlineData("{\"parent\": {\"child\": \"Value\"} }", "parent:child", "Value")]
-            public void ShouldParseSimpleJsonFromStream(string json, string key, string expectedValue)
+            private void ShouldParseSimpleJsonFromStream(string json, string key, string expectedValue)
             {
                 using (Stream stream = new MemoryStream(Encoding.UTF8.GetBytes(json)))
                 {
