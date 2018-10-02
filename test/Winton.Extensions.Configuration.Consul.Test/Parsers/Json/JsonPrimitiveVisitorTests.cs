@@ -1,5 +1,7 @@
 using System.Collections.Generic;
+using System.Globalization;
 using System.Linq;
+using System.Threading;
 using Newtonsoft.Json.Linq;
 using NUnit.Framework;
 
@@ -9,21 +11,43 @@ namespace Winton.Extensions.Configuration.Consul.Parsers.Json
     internal sealed class JsonPrimitiveVisitorTests
     {
         [Test]
-        [TestCase("string")]
-        [TestCase(1)]
-        [TestCase(1.5)]
-        [TestCase(true)]
-        public void ShouldVisitPrimitivesWhenSimpleObject(object value)
+        [TestCase("string", "string")]
+        [TestCase(1, "1")]
+        [TestCase(1.5, "1.5")]
+        [TestCase(true, "True")]
+        public void ShouldVisitPrimitivesWhenSimpleObject(object value, string expected)
         {
             const string key = "Test";
-            var property = new JProperty(key, new JValue(value));
-            var jObject = new JObject { property };
+            var jObject = new JObject { new JProperty(key, new JValue(value)) };
 
             var visitor = new JsonPrimitiveVisitor();
 
-            var expectedPrimitive = new KeyValuePair<string, string>(key, value.ToString());
+            var expectedPrimitive = new KeyValuePair<string, string>(key, expected);
             ICollection<KeyValuePair<string, string>> expectedPrimitives = new[] { expectedPrimitive };
             Assert.That(visitor.VisitJObject(jObject).ToList(), Is.EqualTo(expectedPrimitives).AsCollection);
+        }
+
+        [Test]
+        public void ShouldConvertPrimitivesToStringUsingJsonSerializerCulture()
+        {
+            CultureInfo originalCuluture = Thread.CurrentThread.CurrentCulture;
+            Thread.CurrentThread.CurrentCulture = new CultureInfo("de-DE");
+
+            try
+            {
+                const string key = "Test";
+                var jObject = new JObject { new JProperty(key, new JValue(1.5)) };
+
+                var visitor = new JsonPrimitiveVisitor();
+
+                var expectedPrimitive = new KeyValuePair<string, string>(key, "1.5");
+                ICollection<KeyValuePair<string, string>> expectedPrimitives = new[] { expectedPrimitive };
+                Assert.That(visitor.VisitJObject(jObject).ToList(), Is.EqualTo(expectedPrimitives).AsCollection);
+            }
+            finally
+            {
+                Thread.CurrentThread.CurrentCulture = originalCuluture;
+            }
         }
 
         [Test]
