@@ -33,7 +33,7 @@ namespace Winton.Extensions.Configuration.Consul.Parsers.Json
             string key = ConfigurationPath.Combine(_context.Reverse());
             return new[]
             {
-                new KeyValuePair<string, string>(key, primitive.ToString())
+                new KeyValuePair<string, string>(key, primitive.Value<string>())
             };
         }
 
