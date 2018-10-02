@@ -1,4 +1,6 @@
 using System.Collections.Generic;
+using System.Globalization;
+using System.Threading;
 using FluentAssertions;
 using Newtonsoft.Json.Linq;
 using Xunit;
@@ -76,6 +78,21 @@ namespace Winton.Extensions.Configuration.Consul.Parsers.Json
                     }
                 }
             };
+
+            [Fact]
+            private void ShouldConvertPrimitivesToStringUsingJsonSerializerCulture()
+            {
+                Thread.CurrentThread.CurrentCulture = new CultureInfo("de-DE");
+
+                IEnumerable<KeyValuePair<string, string>> primitives =
+                    _visitor.VisitJObject(new JObject(new JProperty("Test", new JValue(1.5))));
+
+                primitives.Should().BeEquivalentTo(
+                    new List<KeyValuePair<string, string>>
+                    {
+                        new KeyValuePair<string, string>("Test", "1.5")
+                    });
+            }
 
             [Theory]
             [MemberData(nameof(TestCases))]
