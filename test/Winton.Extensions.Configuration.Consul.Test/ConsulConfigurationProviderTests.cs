@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Net;
+using System.Threading;
 using Consul;
 using FluentAssertions;
 using Microsoft.Extensions.Configuration;
@@ -20,9 +21,6 @@ namespace Winton.Extensions.Configuration.Consul
         private readonly Mock<IConsulConfigurationClient> _consulConfigClientMock =
             new Mock<IConsulConfigurationClient>(MockBehavior.Strict);
 
-        private readonly Mock<IConsulConfigurationSource> _consulConfigSourceMock =
-            new Mock<IConsulConfigurationSource>(MockBehavior.Strict);
-
         private ConsulConfigurationProvider _consulConfigProvider;
 
         public sealed class Constructor : ConsulConfigurationProviderTests
@@ -30,28 +28,34 @@ namespace Winton.Extensions.Configuration.Consul
             [Fact]
             public void ShouldThrowIfParserIsNull()
             {
-                _consulConfigSourceMock.Setup(ccs => ccs.Parser).Returns((IConfigurationParser)null);
+                var source = new ConsulConfigurationSource("Test", default(CancellationToken))
+                {
+                    Parser = null
+                };
 
                 // ReSharper disable once ObjectCreationAsStatement
                 Action constructing =
                     () =>
-                        new ConsulConfigurationProvider(_consulConfigSourceMock.Object, _consulConfigClientMock.Object);
+                        new ConsulConfigurationProvider(source, _consulConfigClientMock.Object);
 
                 constructing.Should().Throw<ArgumentNullException>()
-                            .And.Message.Should().Contain(nameof(_consulConfigSourceMock.Object.Parser));
+                            .And.Message.Should().Contain(nameof(IConsulConfigurationSource.Parser));
             }
         }
 
         public sealed class Load : ConsulConfigurationProviderTests
         {
+            private readonly IConsulConfigurationSource _source;
+
             public Load()
             {
-                _consulConfigSourceMock.Setup(ccs => ccs.Parser).Returns(_configParserMock.Object);
-                _consulConfigSourceMock.Setup(ccs => ccs.ReloadOnChange).Returns(false);
+                _source = new ConsulConfigurationSource("Test", default(CancellationToken))
+                {
+                    Parser = _configParserMock.Object,
+                    ReloadOnChange = false
+                };
 
-                _consulConfigProvider = new ConsulConfigurationProvider(
-                    _consulConfigSourceMock.Object,
-                    _consulConfigClientMock.Object);
+                _consulConfigProvider = new ConsulConfigurationProvider(_source, _consulConfigClientMock.Object);
             }
 
             [Fact]
@@ -59,15 +63,14 @@ namespace Winton.Extensions.Configuration.Consul
             {
                 var calledOnLoadException = false;
 
-                _consulConfigClientMock.Setup(ccc => ccc.GetConfig()).ThrowsAsync(new Exception());
-                _consulConfigSourceMock
-                    .Setup(ccs => ccs.OnLoadException)
-                    .Returns(
-                        context =>
-                        {
-                            context.Ignore = true;
-                            calledOnLoadException = true;
-                        });
+                _consulConfigClientMock
+                    .Setup(ccc => ccc.GetConfig("Test", default(CancellationToken)))
+                    .ThrowsAsync(new Exception());
+                _source.OnLoadException = context =>
+                {
+                    context.Ignore = true;
+                    calledOnLoadException = true;
+                };
 
                 _consulConfigProvider.Load();
 
@@ -77,10 +80,10 @@ namespace Winton.Extensions.Configuration.Consul
             [Fact]
             private void ShouldHaveEmptyDataIfConfigDoesNotExistAndIsOptional()
             {
-                _consulConfigSourceMock.Setup(ccs => ccs.Optional).Returns(true);
+                _source.Optional = true;
                 _consulConfigClientMock
-                    .Setup(ccc => ccc.GetConfig())
-                    .ReturnsAsync(new QueryResult<KVPair> { StatusCode = HttpStatusCode.NotFound });
+                    .Setup(ccc => ccc.GetConfig("Test", default(CancellationToken)))
+                    .ReturnsAsync(new QueryResult<KVPair[]> { StatusCode = HttpStatusCode.NotFound });
 
                 _consulConfigProvider.Load();
 
@@ -90,13 +93,16 @@ namespace Winton.Extensions.Configuration.Consul
             [Fact]
             private void ShouldNotParseIfConfigBytesIsNull()
             {
-                _consulConfigSourceMock.Setup(ccs => ccs.Optional).Returns(true);
+                _source.Optional = true;
                 _consulConfigClientMock
-                    .Setup(ccc => ccc.GetConfig())
+                    .Setup(ccc => ccc.GetConfig("Test", default(CancellationToken)))
                     .ReturnsAsync(
-                        new QueryResult<KVPair>
+                        new QueryResult<KVPair[]>
                         {
-                            Response = new KVPair("Test") { Value = new List<byte>().ToArray() },
+                            Response = new[]
+                            {
+                                new KVPair("Test") { Value = new List<byte>().ToArray() }
+                            },
                             StatusCode = HttpStatusCode.OK
                         });
 
@@ -109,29 +115,34 @@ namespace Winton.Extensions.Configuration.Consul
             [Fact]
             private void ShouldNotThrowExceptionIfOnLoadExceptionIsSetToIgnore()
             {
-                _consulConfigClientMock.Setup(ccc => ccc.GetConfig())
-                                       .ThrowsAsync(new Exception("Failed to load from Consul agent"));
-                _consulConfigSourceMock
-                    .Setup(ccs => ccs.OnLoadException)
-                    .Returns(exceptionContext => { exceptionContext.Ignore = true; });
+                _consulConfigClientMock
+                    .Setup(ccc => ccc.GetConfig("Test", default(CancellationToken)))
+                    .ThrowsAsync(new Exception("Failed to load from Consul agent"));
+                _source.OnLoadException = exceptionContext => { exceptionContext.Ignore = true; };
 
                 Action loading = () => _consulConfigProvider.Load();
                 loading.Should().NotThrow();
             }
 
             [Theory]
-            [InlineData("Key", "Key")]
-            [InlineData("KEY", "key")]
-            private void ShouldParseLoadedConfigIntoDictionary(string key, string lookupKey)
+            [InlineData("Key")]
+            [InlineData("KEY")]
+            [InlineData("key")]
+            [InlineData("KeY")]
+            private void ShouldParseLoadedConfigIntoCaseInsensitiveDictionary(string lookupKey)
             {
-                _configParserMock.Setup(cp => cp.Parse(It.IsAny<MemoryStream>()))
-                                 .Returns(new Dictionary<string, string> { { key, "Value" } });
+                _configParserMock
+                    .Setup(cp => cp.Parse(It.IsAny<MemoryStream>()))
+                    .Returns(new Dictionary<string, string> { { "kEy", "Value" } });
                 _consulConfigClientMock
-                    .Setup(ccc => ccc.GetConfig())
+                    .Setup(ccc => ccc.GetConfig("Test", default(CancellationToken)))
                     .ReturnsAsync(
-                        new QueryResult<KVPair>
+                        new QueryResult<KVPair[]>
                         {
-                            Response = new KVPair("Test") { Value = new List<byte> { 1 }.ToArray() },
+                            Response = new[]
+                            {
+                                new KVPair("Test") { Value = new List<byte> { 1 }.ToArray() }
+                            },
                             StatusCode = HttpStatusCode.OK
                         });
 
@@ -147,15 +158,14 @@ namespace Winton.Extensions.Configuration.Consul
                 ConsulLoadExceptionContext exceptionContext = null;
                 var expectedException = new Exception("Failed to load from Consul agent");
 
-                _consulConfigClientMock.Setup(ccc => ccc.GetConfig()).ThrowsAsync(expectedException);
-                _consulConfigSourceMock
-                    .Setup(ccs => ccs.OnLoadException)
-                    .Returns(
-                        context =>
-                        {
-                            context.Ignore = true;
-                            exceptionContext = context;
-                        });
+                _consulConfigClientMock
+                    .Setup(ccc => ccc.GetConfig("Test", default(CancellationToken)))
+                    .ThrowsAsync(expectedException);
+                _source.OnLoadException = context =>
+                {
+                    context.Ignore = true;
+                    exceptionContext = context;
+                };
 
                 _consulConfigProvider.Load();
 
@@ -166,29 +176,27 @@ namespace Winton.Extensions.Configuration.Consul
             private void ShouldSetSourceInLoadExceptionContextWhenExceptionDuringLoad()
             {
                 ConsulLoadExceptionContext exceptionContext = null;
-                _consulConfigClientMock.Setup(ccc => ccc.GetConfig()).ThrowsAsync(new Exception());
-                _consulConfigSourceMock
-                    .Setup(ccs => ccs.OnLoadException)
-                    .Returns(
-                        context =>
-                        {
-                            context.Ignore = true;
-                            exceptionContext = context;
-                        });
+                _consulConfigClientMock
+                    .Setup(ccc => ccc.GetConfig("Test", default(CancellationToken)))
+                    .ThrowsAsync(new Exception());
+                _source.OnLoadException = context =>
+                {
+                    context.Ignore = true;
+                    exceptionContext = context;
+                };
 
                 _consulConfigProvider.Load();
 
-                exceptionContext.Source.Should().BeSameAs(_consulConfigSourceMock.Object);
+                exceptionContext.Source.Should().BeSameAs(_source);
             }
 
             [Fact]
             private void ShouldThrowExceptionIfOnLoadExceptionDoesNotSetIgnoreWhenExceptionDuringLoad()
             {
-                _consulConfigClientMock.Setup(ccc => ccc.GetConfig())
-                                       .ThrowsAsync(new Exception("Error"));
-                _consulConfigSourceMock
-                    .Setup(ccs => ccs.OnLoadException)
-                    .Returns(exceptionContext => { exceptionContext.Ignore = false; });
+                _consulConfigClientMock
+                    .Setup(ccc => ccc.GetConfig("Test", default(CancellationToken)))
+                    .ThrowsAsync(new Exception("Error"));
+                _source.OnLoadException = exceptionContext => { exceptionContext.Ignore = false; };
 
                 Action loading = _consulConfigProvider.Invoking(ccp => ccp.Load());
                 loading.Should().Throw<Exception>().WithMessage("Error");
@@ -197,14 +205,11 @@ namespace Winton.Extensions.Configuration.Consul
             [Fact]
             private void ShouldThrowIfConfigDoesNotExistAndIsNotOptonalWhenLoad()
             {
-                _consulConfigSourceMock.Setup(ccs => ccs.Optional).Returns(false);
+                _source.Optional = false;
+                _source.OnLoadException = context => context.Ignore = false;
                 _consulConfigClientMock
-                    .Setup(ccc => ccc.GetConfig())
-                    .ReturnsAsync(new QueryResult<KVPair> { StatusCode = HttpStatusCode.NotFound });
-                _consulConfigSourceMock.Setup(ccs => ccs.Key).Returns("Test");
-                _consulConfigSourceMock
-                    .Setup(ccs => ccs.OnLoadException)
-                    .Returns(context => context.Ignore = false);
+                    .Setup(ccc => ccc.GetConfig("Test", default(CancellationToken)))
+                    .ReturnsAsync(new QueryResult<KVPair[]> { StatusCode = HttpStatusCode.NotFound });
 
                 Action loading = _consulConfigProvider.Invoking(ccp => ccp.Load());
                 loading.Should().Throw<Exception>()
@@ -215,39 +220,45 @@ namespace Winton.Extensions.Configuration.Consul
         public sealed class Reload : ConsulConfigurationProviderTests
         {
             private readonly ConfigurationReloadToken _firstChangeToken;
+            private readonly IConsulConfigurationSource _source;
 
             public Reload()
             {
+                _source = new ConsulConfigurationSource("Test", default(CancellationToken))
+                {
+                    Parser = _configParserMock.Object,
+                    ReloadOnChange = true
+                };
                 _firstChangeToken = new ConfigurationReloadToken();
                 _consulConfigClientMock
-                    .SetupSequence(ccc => ccc.Watch(It.IsAny<Action<ConsulWatchExceptionContext>>()))
+                    .SetupSequence(ccc => ccc.Watch("Test", It.IsAny<Action<ConsulWatchExceptionContext>>(), default(CancellationToken)))
                     .Returns(_firstChangeToken)
                     .Returns(new ConfigurationReloadToken());
-                _consulConfigSourceMock.Setup(ccs => ccs.OnWatchException).Returns(context => { });
-                _consulConfigSourceMock.Setup(ccs => ccs.Parser).Returns(_configParserMock.Object);
-                _consulConfigSourceMock.Setup(ccs => ccs.ReloadOnChange).Returns(true);
 
                 _consulConfigProvider = new ConsulConfigurationProvider(
-                    _consulConfigSourceMock.Object,
+                    _source,
                     _consulConfigClientMock.Object);
             }
 
             [Fact]
             private void ShouldNotOverwriteNonOptionalConfigIfDoesNotExist()
             {
-                _consulConfigSourceMock.Setup(ccs => ccs.Optional).Returns(false);
+                _source.Optional = false;
                 _consulConfigClientMock
-                    .SetupSequence(ccc => ccc.GetConfig())
+                    .SetupSequence(ccc => ccc.GetConfig("Test", default(CancellationToken)))
                     .ReturnsAsync(
-                        new QueryResult<KVPair>
+                        new QueryResult<KVPair[]>
                         {
-                            Response = new KVPair("Test") { Value = new List<byte> { 1 }.ToArray() },
+                            Response = new[]
+                            {
+                                new KVPair("Test") { Value = new List<byte> { 1 }.ToArray() }
+                            },
                             StatusCode = HttpStatusCode.OK
                         })
-                    .ReturnsAsync(new QueryResult<KVPair> { StatusCode = HttpStatusCode.NotFound });
-
-                _configParserMock.Setup(cp => cp.Parse(It.IsAny<MemoryStream>()))
-                                 .Returns(new Dictionary<string, string> { { "Key", "Test" } });
+                    .ReturnsAsync(new QueryResult<KVPair[]> { StatusCode = HttpStatusCode.NotFound });
+                _configParserMock
+                    .Setup(cp => cp.Parse(It.IsAny<MemoryStream>()))
+                    .Returns(new Dictionary<string, string> { { "Key", "Test" } });
 
                 _consulConfigProvider.Load();
 
@@ -261,11 +272,10 @@ namespace Winton.Extensions.Configuration.Consul
             [InlineData(false)]
             private void ShouldNotThrowIfDoesNotExist(bool optional)
             {
-                _consulConfigSourceMock.Setup(ccs => ccs.Optional).Returns(optional);
-                _consulConfigSourceMock.Setup(ccs => ccs.ReloadOnChange).Returns(true);
+                _source.Optional = optional;
                 _consulConfigClientMock
-                    .Setup(ccc => ccc.GetConfig())
-                    .ReturnsAsync(new QueryResult<KVPair> { StatusCode = HttpStatusCode.NotFound });
+                    .Setup(ccc => ccc.GetConfig("Test", default(CancellationToken)))
+                    .ReturnsAsync(new QueryResult<KVPair[]> { StatusCode = HttpStatusCode.NotFound });
 
                 Action reloading = _firstChangeToken.Invoking(ct => ct.OnReload());
                 reloading.Should().NotThrow();
@@ -274,14 +284,14 @@ namespace Winton.Extensions.Configuration.Consul
             [Fact]
             private void ShouldReloadConfigIfReloadOnChangeAndDataInConsulHasChanged()
             {
-                _consulConfigSourceMock.Setup(ccs => ccs.Optional).Returns(true);
                 _consulConfigClientMock
-                    .Setup(ccc => ccc.GetConfig())
-                    .ReturnsAsync(new QueryResult<KVPair> { StatusCode = HttpStatusCode.OK });
+                    .Setup(ccc => ccc.GetConfig("Test", default(CancellationToken)))
+                    .ReturnsAsync(new QueryResult<KVPair[]> { StatusCode = HttpStatusCode.OK });
 
                 _firstChangeToken.OnReload();
 
-                Action verifying = () => _consulConfigClientMock.Verify(ccc => ccc.GetConfig(), Times.Once);
+                Action verifying = () => _consulConfigClientMock
+                    .Verify(ccc => ccc.GetConfig("Test", default(CancellationToken)), Times.Once);
                 verifying.Should().NotThrow();
             }
 
@@ -291,7 +301,7 @@ namespace Winton.Extensions.Configuration.Consul
                 Action verifying =
                     () =>
                         _consulConfigClientMock.Verify(
-                            ccs => ccs.Watch(_consulConfigSourceMock.Object.OnWatchException),
+                            ccs => ccs.Watch("Test", _source.OnWatchException, default(CancellationToken)),
                             Times.Once);
                 verifying.Should().NotThrow();
             }

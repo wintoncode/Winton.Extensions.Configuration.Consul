@@ -4,6 +4,7 @@
 using System;
 using System.Collections.Generic;
 using System.IO;
+using System.Linq;
 using System.Threading.Tasks;
 using Consul;
 using Microsoft.Extensions.Configuration;
@@ -32,7 +33,7 @@ namespace Winton.Extensions.Configuration.Consul
             if (source.ReloadOnChange)
             {
                 ChangeToken.OnChange(
-                    () => _consulConfigClient.Watch(_source.OnWatchException),
+                    () => _consulConfigClient.Watch(_source.Key, _source.OnWatchException, _source.CancellationToken),
                     async () =>
                     {
                         await DoLoad(true).ConfigureAwait(false);
@@ -53,27 +54,14 @@ namespace Winton.Extensions.Configuration.Consul
             }
         }
 
-        private Dictionary<string, string> ConvertResultToDictionary(QueryResult<KVPair> queryResult)
-        {
-            if (!queryResult.HasValue())
-            {
-                return new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
-            }
-
-            using (var configStream = new MemoryStream(queryResult.Value()))
-            {
-                return new Dictionary<string, string>(
-                    _source.Parser.Parse(configStream),
-                    StringComparer.OrdinalIgnoreCase);
-            }
-        }
-
         private async Task DoLoad(bool reloading)
         {
             try
             {
-                QueryResult<KVPair> queryResult = await _consulConfigClient.GetConfig().ConfigureAwait(false);
-                if (!queryResult.HasValue() && !_source.Optional)
+                QueryResult<KVPair[]> result = await _consulConfigClient
+                    .GetConfig(_source.Key, _source.CancellationToken)
+                    .ConfigureAwait(false);
+                if (!result.HasValue() && !_source.Optional)
                 {
                     if (!reloading)
                     {
@@ -85,7 +73,10 @@ namespace Winton.Extensions.Configuration.Consul
                     return;
                 }
 
-                Data = ConvertResultToDictionary(queryResult);
+                Data = (result?.Response ?? new KVPair[0])
+                    .Where(kvp => kvp.HasValue())
+                    .SelectMany(kvp => kvp.ConvertToConfig(_source.Key, _source.Parser))
+                    .ToDictionary(kvp => kvp.Key, kvp => kvp.Value, StringComparer.OrdinalIgnoreCase);
             }
             catch (Exception exception)
             {
