@@ -30,16 +30,24 @@ namespace Winton.Extensions.Configuration.Consul.Parsers.Json
         [Test]
         public void ShouldConvertPrimitivesToStringUsingJsonSerializerCulture()
         {
+            CultureInfo originalCuluture = Thread.CurrentThread.CurrentCulture;
             Thread.CurrentThread.CurrentCulture = new CultureInfo("de-DE");
 
-            const string key = "Test";
-            var jObject = new JObject { new JProperty(key, new JValue(1.5)) };
+            try
+            {
+                const string key = "Test";
+                var jObject = new JObject { new JProperty(key, new JValue(1.5)) };
 
-            var visitor = new JsonPrimitiveVisitor();
+                var visitor = new JsonPrimitiveVisitor();
 
-            var expectedPrimitive = new KeyValuePair<string, string>(key, "1.5");
-            ICollection<KeyValuePair<string, string>> expectedPrimitives = new[] { expectedPrimitive };
-            Assert.That(visitor.VisitJObject(jObject).ToList(), Is.EqualTo(expectedPrimitives).AsCollection);
+                var expectedPrimitive = new KeyValuePair<string, string>(key, "1.5");
+                ICollection<KeyValuePair<string, string>> expectedPrimitives = new[] { expectedPrimitive };
+                Assert.That(visitor.VisitJObject(jObject).ToList(), Is.EqualTo(expectedPrimitives).AsCollection);
+            }
+            finally
+            {
+                Thread.CurrentThread.CurrentCulture = originalCuluture;
+            }
         }
 
         [Test]
