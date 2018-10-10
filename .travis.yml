@@ -12,10 +12,10 @@ matrix:
   include:
     - os: linux
       sudo: required
-      dotnet: 2.0.0
+      dotnet: 2.1.403
     - os: osx 
       osx_image: xcode9 # OSX 10.12
-      dotnet: 2.0.0
+      dotnet: 2.1.403
       before_install:
         - ulimit -n 4096
 script:

@@ -231,7 +231,12 @@ namespace Winton.Extensions.Configuration.Consul
                 };
                 _firstChangeToken = new ConfigurationReloadToken();
                 _consulConfigClientMock
-                    .SetupSequence(ccc => ccc.Watch("Test", It.IsAny<Action<ConsulWatchExceptionContext>>(), default(CancellationToken)))
+                    .SetupSequence(
+                        ccc =>
+                            ccc.Watch(
+                                "Test",
+                                It.IsAny<Action<ConsulWatchExceptionContext>>(),
+                                default(CancellationToken)))
                     .Returns(_firstChangeToken)
                     .Returns(new ConfigurationReloadToken());
 

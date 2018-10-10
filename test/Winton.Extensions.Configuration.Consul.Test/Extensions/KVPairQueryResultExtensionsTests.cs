@@ -14,7 +14,7 @@ namespace Winton.Extensions.Configuration.Consul.Extensions
             {
                 new object[]
                 {
-                    null as QueryResult<KVPair[]>,
+                    null,
                     false
                 },
                 new object[]
@@ -38,7 +38,9 @@ namespace Winton.Extensions.Configuration.Consul.Extensions
                 {
                     new QueryResult<KVPair[]>
                     {
-                        Response = new KVPair[] { },
+                        Response = new KVPair[]
+                        {
+                        },
                         StatusCode = HttpStatusCode.OK
                     },
                     false
@@ -147,7 +149,9 @@ namespace Winton.Extensions.Configuration.Consul.Extensions
 
             [Theory]
             [MemberData(nameof(TestCases))]
-            private void ShouldBeTrueWhenThereIsAtLeastOneLeafNodeWithSomeData(QueryResult<KVPair[]> queryResult, bool expected)
+            private void ShouldBeTrueWhenThereIsAtLeastOneLeafNodeWithSomeData(
+                QueryResult<KVPair[]> queryResult,
+                bool expected)
             {
                 bool hasValue = queryResult.HasValue();
 

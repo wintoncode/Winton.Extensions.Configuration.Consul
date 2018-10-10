@@ -1,13 +1,14 @@
 using Microsoft.AspNetCore.Builder;
-using Microsoft.AspNetCore.Hosting;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Swashbuckle.AspNetCore.Swagger;
 
 namespace Winton.Extensions.Configuration.Consul.Website
 {
-    public class Startup
+    internal sealed class Startup
     {
+        private const string _AppTitle = "Test Website";
+        private const string _Version = "v1";
         private readonly IConfiguration _configuration;
 
         public Startup(IConfiguration configuration)
@@ -15,19 +16,19 @@ namespace Winton.Extensions.Configuration.Consul.Website
             _configuration = configuration;
         }
 
-        public void Configure(IApplicationBuilder app, IApplicationLifetime appLifetime)
+        public void Configure(IApplicationBuilder app)
         {
             app
                 .UseDeveloperExceptionPage()
                 .UseMvc()
                 .UseSwagger()
-                .UseSwaggerUI(c => { c.SwaggerEndpoint("/swagger/v1/swagger.json", "Test Website"); });
+                .UseSwaggerUI(c => { c.SwaggerEndpoint($"{_Version}/swagger.json", _AppTitle); });
         }
 
         public void ConfigureServices(IServiceCollection services)
         {
             services
-                .AddSwaggerGen(c => { c.SwaggerDoc("v1", new Info { Title = "Test Website", Version = "v1" }); })
+                .AddSwaggerGen(c => { c.SwaggerDoc(_Version, new Info { Title = _AppTitle, Version = _Version }); })
                 .AddSingleton(_configuration)
                 .AddMvc();
         }
