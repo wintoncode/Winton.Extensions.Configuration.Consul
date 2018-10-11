@@ -23,6 +23,9 @@ namespace Winton.Extensions.Configuration.Consul
         /// <param name="onException">An action to be invoked if an exception occurs during the watch.</param>
         /// <param name="cancellationToken">A cancellation token that can be used to cancel the operation.</param>
         /// <returns>An <see cref="IChangeToken" /> that will indicated when changes have occured.</returns>
-        IChangeToken Watch(string key, Action<ConsulWatchExceptionContext> onException, CancellationToken cancellationToken);
+        IChangeToken Watch(
+            string key,
+            Action<ConsulWatchExceptionContext> onException,
+            CancellationToken cancellationToken);
     }
 }

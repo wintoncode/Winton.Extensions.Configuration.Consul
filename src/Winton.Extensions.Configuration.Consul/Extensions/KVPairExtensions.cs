@@ -1,7 +1,6 @@
 // Copyright (c) Winton. All rights reserved.
 // Licensed under the Apache License, Version 2.0. See LICENCE in the project root for license information.
 
-using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
@@ -21,21 +20,22 @@ namespace Winton.Extensions.Configuration.Consul.Extensions
             {
                 return parser
                     .Parse(stream)
-                    .Select(pair =>
-                    {
-                        var key = $"{kvPair.Key.TrimEnd('/')}:{pair.Key}"
-                            .Replace('/', ':')
-                            .TrimStart(rootKey.ToCharArray())
-                            .TrimStart(':')
-                            .TrimEnd(':');
-                        if (string.IsNullOrEmpty(key))
+                    .Select(
+                        pair =>
                         {
-                            throw new InvalidKeyPairException(
-                                "The key must not be null or empty. Ensure that there is at least one key under the root of the config or that the data there contains more than just a single value.");
-                        }
+                            string key = $"{kvPair.Key.TrimEnd('/')}:{pair.Key}"
+                                .Replace('/', ':')
+                                .TrimStart(rootKey.ToCharArray())
+                                .TrimStart(':')
+                                .TrimEnd(':');
+                            if (string.IsNullOrEmpty(key))
+                            {
+                                throw new InvalidKeyPairException(
+                                    "The key must not be null or empty. Ensure that there is at least one key under the root of the config or that the data there contains more than just a single value.");
+                            }
 
-                        return new KeyValuePair<string, string>(key, pair.Value);
-                    });
+                            return new KeyValuePair<string, string>(key, pair.Value);
+                        });
             }
         }
 

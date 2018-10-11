@@ -2,7 +2,6 @@
 // Licensed under the Apache License, Version 2.0. See LICENCE in the project root for license information.
 
 using System;
-using System.Collections.Generic;
 using System.Net;
 using System.Threading;
 using System.Threading.Tasks;
@@ -32,13 +31,19 @@ namespace Winton.Extensions.Configuration.Consul
             return result;
         }
 
-        public IChangeToken Watch(string key, Action<ConsulWatchExceptionContext> onException, CancellationToken cancellationToken)
+        public IChangeToken Watch(
+            string key,
+            Action<ConsulWatchExceptionContext> onException,
+            CancellationToken cancellationToken)
         {
             Task.Run(() => PollForChanges(key, onException, cancellationToken));
             return _reloadToken;
         }
 
-        private async Task<QueryResult<KVPair[]>> GetKvPairs(string key, CancellationToken cancellationToken, QueryOptions queryOptions = null)
+        private async Task<QueryResult<KVPair[]>> GetKvPairs(
+            string key,
+            CancellationToken cancellationToken,
+            QueryOptions queryOptions = null)
         {
             using (IConsulClient consulClient = _consulClientFactory.Create())
             {
@@ -72,7 +77,10 @@ namespace Winton.Extensions.Configuration.Consul
             return result != null && UpdateLastIndex(result);
         }
 
-        private async Task PollForChanges(string key, Action<ConsulWatchExceptionContext> onException, CancellationToken cancellationToken)
+        private async Task PollForChanges(
+            string key,
+            Action<ConsulWatchExceptionContext> onException,
+            CancellationToken cancellationToken)
         {
             while (!cancellationToken.IsCancellationRequested)
             {

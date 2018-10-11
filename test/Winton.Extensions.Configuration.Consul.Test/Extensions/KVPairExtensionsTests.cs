@@ -1,7 +1,6 @@
 using System;
 using System.Collections.Generic;
 using System.IO;
-using System.Net;
 using Consul;
 using FluentAssertions;
 using Moq;
@@ -115,7 +114,7 @@ namespace Winton.Extensions.Configuration.Consul.Extensions
                     }
                 };
 
-                var config = kvPair.ConvertToConfig(rootKey, _parserMock.Object);
+                IEnumerable<KeyValuePair<string, string>> config = kvPair.ConvertToConfig(rootKey, _parserMock.Object);
 
                 config.Should().BeEquivalentTo(expected);
             }
@@ -134,7 +133,8 @@ namespace Winton.Extensions.Configuration.Consul.Extensions
                     }
                 };
 
-                Func<IEnumerable<KeyValuePair<string, string>>> converting = () => kvPair.ConvertToConfig("rootKey", _parserMock.Object);
+                Func<IEnumerable<KeyValuePair<string, string>>> converting =
+                    () => kvPair.ConvertToConfig("rootKey", _parserMock.Object);
 
                 converting
                     .Enumerating()

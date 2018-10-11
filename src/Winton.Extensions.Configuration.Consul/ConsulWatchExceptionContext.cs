@@ -18,13 +18,13 @@ namespace Winton.Extensions.Configuration.Consul
         }
 
         /// <summary>
-        ///     Gets the <see cref="Exception" /> that occured.
-        /// </summary>
-        public Exception Exception { get; }
-
-        /// <summary>
         ///     Gets the <see cref="CancellationToken" /> for the watch task which can be used to terminate it.
         /// </summary>
         public CancellationToken CancellationToken { get; }
+
+        /// <summary>
+        ///     Gets the <see cref="Exception" /> that occured.
+        /// </summary>
+        public Exception Exception { get; }
     }
 }

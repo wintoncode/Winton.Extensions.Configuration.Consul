@@ -45,7 +45,8 @@ namespace Winton.Extensions.Configuration.Consul
 
                 await _consulConfigurationClient.GetConfig("Test", default(CancellationToken));
 
-                Action verifying = () => _kvMock.Verify(kv => kv.List("Test", null, default(CancellationToken)), Times.Once);
+                Action verifying =
+                    () => _kvMock.Verify(kv => kv.List("Test", null, default(CancellationToken)), Times.Once);
                 verifying.Should().NotThrow();
             }
 
@@ -119,10 +120,10 @@ namespace Winton.Extensions.Configuration.Consul
 
                 getKvTaskSource.SetResult(
                     new QueryResult<KVPair[]>
-                        {
-                            LastIndex = 1,
-                            StatusCode = HttpStatusCode.OK
-                        });
+                    {
+                        LastIndex = 1,
+                        StatusCode = HttpStatusCode.OK
+                    });
                 bool completed = await configChangedCompletion.Task;
 
                 completed.Should().BeTrue();
@@ -158,7 +159,8 @@ namespace Winton.Extensions.Configuration.Consul
             [Fact]
             private async Task ShouldUseLongPollingToPollForChanges()
             {
-                var kvTaskSources = Enumerable.Range(0, 10).Select(i => new TaskCompletionSource<QueryResult<KVPair[]>>()).ToArray();
+                TaskCompletionSource<QueryResult<KVPair[]>>[] kvTaskSources =
+                    Enumerable.Range(0, 10).Select(i => new TaskCompletionSource<QueryResult<KVPair[]>>()).ToArray();
                 var kvTaskQueue = new Queue<Task<QueryResult<KVPair[]>>>(kvTaskSources.Select(kts => kts.Task));
 
                 _kvMock
@@ -182,21 +184,21 @@ namespace Winton.Extensions.Configuration.Consul
                 {
                     kvTaskSources[i].SetResult(
                         new QueryResult<KVPair[]>
-                            {
-                                LastIndex = 0,
-                                StatusCode = HttpStatusCode.OK
-                            });
+                        {
+                            LastIndex = 0,
+                            StatusCode = HttpStatusCode.OK
+                        });
                 }
 
                 // The 6th call returns an updated index indicating that the config has changed
                 kvTaskSources[5].SetResult(
                     new QueryResult<KVPair[]>
-                        {
-                            LastIndex = 1,
-                            StatusCode = HttpStatusCode.OK
-                        });
+                    {
+                        LastIndex = 1,
+                        StatusCode = HttpStatusCode.OK
+                    });
 
-               await watchCompletion.Task;
+                await watchCompletion.Task;
 
                 Action verifying = () => _kvMock
                     .Verify(
@@ -215,18 +217,19 @@ namespace Winton.Extensions.Configuration.Consul
 
                 _kvMock
                     .Setup(kv => kv.List("Test", It.IsAny<QueryOptions>(), default(CancellationToken)))
-                    .Returns((string key, QueryOptions options, CancellationToken cancellationToken) =>
-                    {
-                        watchWaitIndex = options?.WaitIndex;
-                        return kvTaskQueue.Dequeue();
-                    });
+                    .Returns(
+                        (string key, QueryOptions options, CancellationToken cancellationToken) =>
+                        {
+                            watchWaitIndex = options?.WaitIndex;
+                            return kvTaskQueue.Dequeue();
+                        });
 
                 getKvTaskSource.SetResult(
                     new QueryResult<KVPair[]>
-                        {
-                            LastIndex = 1,
-                            StatusCode = HttpStatusCode.OK
-                        });
+                    {
+                        LastIndex = 1,
+                        StatusCode = HttpStatusCode.OK
+                    });
 
                 // Get config once which should update the latest index
                 await _consulConfigurationClient.GetConfig("Test", default(CancellationToken));
@@ -239,10 +242,10 @@ namespace Winton.Extensions.Configuration.Consul
 
                 watchKvTaskSource.SetResult(
                     new QueryResult<KVPair[]>
-                        {
-                            LastIndex = 2,
-                            StatusCode = HttpStatusCode.OK
-                        });
+                    {
+                        LastIndex = 2,
+                        StatusCode = HttpStatusCode.OK
+                    });
                 await watchCompletion.Task;
 
                 watchWaitIndex.Should().Be(1);
@@ -259,11 +262,12 @@ namespace Winton.Extensions.Configuration.Consul
 
                 _kvMock
                     .Setup(kv => kv.List("Test", It.IsAny<QueryOptions>(), default(CancellationToken)))
-                    .Returns((string key, QueryOptions options, CancellationToken cancellationToken) =>
-                    {
-                        waitIndex = options?.WaitIndex;
-                        return kvTaskQueue.Dequeue();
-                    });
+                    .Returns(
+                        (string key, QueryOptions options, CancellationToken cancellationToken) =>
+                        {
+                            waitIndex = options?.WaitIndex;
+                            return kvTaskQueue.Dequeue();
+                        });
 
                 // The KV result initiated by the first watch returns with an updated index of 1
                 var watchCompletion1 = new TaskCompletionSource<bool>();
@@ -273,10 +277,10 @@ namespace Winton.Extensions.Configuration.Consul
 
                 watchKvTaskSource1.SetResult(
                     new QueryResult<KVPair[]>
-                        {
-                            LastIndex = 1,
-                            StatusCode = HttpStatusCode.OK
-                        });
+                    {
+                        LastIndex = 1,
+                        StatusCode = HttpStatusCode.OK
+                    });
                 await watchCompletion1.Task;
 
                 // The KV result from the second watch returns with an updated index so that it can be determined that it ran inside the watch
@@ -287,10 +291,10 @@ namespace Winton.Extensions.Configuration.Consul
 
                 watchKvTaskSource2.SetResult(
                     new QueryResult<KVPair[]>
-                        {
-                            LastIndex = 2,
-                            StatusCode = HttpStatusCode.OK
-                        });
+                    {
+                        LastIndex = 2,
+                        StatusCode = HttpStatusCode.OK
+                    });
                 await watchCompletion2.Task;
 
                 // The wait index sent the second time should be the value returned from the first KV result

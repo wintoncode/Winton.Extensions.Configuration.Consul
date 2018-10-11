@@ -6,7 +6,7 @@ using Microsoft.Extensions.Configuration;
 
 namespace Winton.Extensions.Configuration.Consul.Website
 {
-    public class Program
+    internal sealed class Program
     {
         public static void Main(string[] args)
         {
