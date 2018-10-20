@@ -25,7 +25,7 @@ namespace Winton.Extensions.Configuration.Consul.Extensions
                         {
                             string key = $"{kvPair.Key.TrimEnd('/')}:{pair.Key}"
                                 .Replace('/', ':')
-                                .TrimStart(rootKey.ToCharArray())
+                                .TrimStart(rootKey.Replace('/', ':').ToCharArray())
                                 .TrimStart(':')
                                 .TrimEnd(':');
                             if (string.IsNullOrEmpty(key))
