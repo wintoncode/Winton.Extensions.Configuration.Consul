@@ -23,11 +23,9 @@ namespace Winton.Extensions.Configuration.Consul.Extensions
                     .Select(
                         pair =>
                         {
-                            string key = $"{kvPair.Key.TrimEnd('/')}:{pair.Key}"
+                            string key = $"{kvPair.Key.TrimStart(rootKey.ToCharArray()).TrimEnd('/')}:{pair.Key}"
                                 .Replace('/', ':')
-                                .TrimStart(rootKey.ToCharArray())
-                                .TrimStart(':')
-                                .TrimEnd(':');
+                                .Trim(':');
                             if (string.IsNullOrEmpty(key))
                             {
                                 throw new InvalidKeyPairException(
