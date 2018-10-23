@@ -92,6 +92,36 @@ namespace Winton.Extensions.Configuration.Consul.Extensions
                         new KeyValuePair<string, string>("Section:SubSection:Property", "1"),
                         new KeyValuePair<string, string>("Section:SubSection:AnotherSubSection:Property", "2")
                     }
+                },
+                new object[]
+                {
+                    "path/to/rootKey",
+                    "path/to/rootKey",
+                    new Dictionary<string, string> { { "Key", "value" } },
+                    new[]
+                    {
+                        new KeyValuePair<string, string>("Key", "value")
+                    }
+                },
+                new object[]
+                {
+                    "path/to/rootKey",
+                    "path/to/rootKey/",
+                    new Dictionary<string, string> { { "Key", "value" } },
+                    new[]
+                    {
+                        new KeyValuePair<string, string>("Key", "value")
+                    }
+                },
+                new object[]
+                {
+                    "path/to/rootKey",
+                    "path/to/rootKey/Section",
+                    new Dictionary<string, string> { { "Key", "value" } },
+                    new[]
+                    {
+                        new KeyValuePair<string, string>("Section:Key", "value")
+                    }
                 }
             };
 
