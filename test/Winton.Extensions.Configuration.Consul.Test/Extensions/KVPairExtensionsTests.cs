@@ -54,6 +54,16 @@ namespace Winton.Extensions.Configuration.Consul.Extensions
                 },
                 new object[]
                 {
+                    "RootKey/Settings",
+                    "RootKey/Settings/Root",
+                    new Dictionary<string, string> { { "Key", "value" } },
+                    new[]
+                    {
+                        new KeyValuePair<string, string>("Root:Key", "value")
+                    }
+                },
+                new object[]
+                {
                     "rootKey",
                     "rootKey",
                     new Dictionary<string, string> { { "Section:Property", "value" } },
