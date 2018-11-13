@@ -23,7 +23,7 @@ namespace Winton.Extensions.Configuration.Consul.Extensions
                     .Select(
                         pair =>
                         {
-                            string key = $"{kvPair.Key.TrimStart(rootKey.ToCharArray()).TrimEnd('/')}:{pair.Key}"
+                            string key = $"{kvPair.Key.RemoveStart(rootKey).TrimEnd('/')}:{pair.Key}"
                                 .Replace('/', ':')
                                 .Trim(':');
                             if (string.IsNullOrEmpty(key))
@@ -45,6 +45,11 @@ namespace Winton.Extensions.Configuration.Consul.Extensions
         internal static bool IsLeafNode(this KVPair kvPair)
         {
             return !kvPair.Key.EndsWith("/");
+        }
+
+        private static string RemoveStart(this string s, string toRemove)
+        {
+            return s.StartsWith(toRemove) ? s.Remove(0, toRemove.Length) : s;
         }
     }
 }
