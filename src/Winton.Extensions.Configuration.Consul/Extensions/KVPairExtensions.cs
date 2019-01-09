@@ -13,7 +13,7 @@ namespace Winton.Extensions.Configuration.Consul.Extensions
     {
         internal static IEnumerable<KeyValuePair<string, string>> ConvertToConfig(
             this KVPair kvPair,
-            string rootKey,
+            string keyToRemove,
             IConfigurationParser parser)
         {
             using (Stream stream = new MemoryStream(kvPair.Value))
@@ -23,7 +23,7 @@ namespace Winton.Extensions.Configuration.Consul.Extensions
                     .Select(
                         pair =>
                         {
-                            string key = $"{kvPair.Key.RemoveStart(rootKey).TrimEnd('/')}:{pair.Key}"
+                            string key = $"{kvPair.Key.RemoveStart(keyToRemove).TrimEnd('/')}:{pair.Key}"
                                 .Replace('/', ':')
                                 .Trim(':');
                             if (string.IsNullOrEmpty(key))

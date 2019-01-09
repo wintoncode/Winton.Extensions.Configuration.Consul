@@ -35,6 +35,8 @@ namespace Winton.Extensions.Configuration.Consul
 
         public string Key { get; }
 
+        public string KeyToRemove { get; set; }
+
         public Action<ConsulLoadExceptionContext> OnLoadException { get; set; }
 
         public Action<ConsulWatchExceptionContext> OnWatchException { get; set; }
