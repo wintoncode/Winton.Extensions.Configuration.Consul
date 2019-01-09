@@ -71,9 +71,11 @@ namespace Winton.Extensions.Configuration.Consul
                     return;
                 }
 
+                string keyToRemove = _source.KeyToRemove ?? _source.Key;
+
                 Data = (result?.Response ?? new KVPair[0])
                     .Where(kvp => kvp.HasValue())
-                    .SelectMany(kvp => kvp.ConvertToConfig(_source.Key, _source.Parser))
+                    .SelectMany(kvp => kvp.ConvertToConfig(keyToRemove, _source.Parser))
                     .ToDictionary(kvp => kvp.Key, kvp => kvp.Value, StringComparer.OrdinalIgnoreCase);
             }
             catch (Exception exception)
