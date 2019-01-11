@@ -51,6 +51,14 @@ namespace Winton.Extensions.Configuration.Consul
         string Key { get; }
 
         /// <summary>
+        ///     Gets the portion of the Consul key to remove from the configuration keys.
+        ///     By default, when the configuration is parsed, the keys are created by removing the root key in Consul
+        ///     where the configuration is located.
+        ///     If this property is set then this string is removed instead of the Consul root key.
+        /// </summary>
+        string KeyToRemove { get; }
+
+        /// <summary>
         ///     Gets or sets an <see cref="Action" /> that is invoked when an exception is raised during config load.
         ///     Used by clients to handle the exception if possible and prevent it from being thrown.
         /// </summary>
