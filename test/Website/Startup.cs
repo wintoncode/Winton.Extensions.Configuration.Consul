@@ -1,4 +1,5 @@
 using Microsoft.AspNetCore.Builder;
+using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Swashbuckle.AspNetCore.Swagger;
@@ -30,7 +31,8 @@ namespace Winton.Extensions.Configuration.Consul.Website
             services
                 .AddSwaggerGen(c => { c.SwaggerDoc(_Version, new Info { Title = _AppTitle, Version = _Version }); })
                 .AddSingleton(_configuration)
-                .AddMvc();
+                .AddMvc()
+                .SetCompatibilityVersion(CompatibilityVersion.Version_2_2);
         }
     }
 }
