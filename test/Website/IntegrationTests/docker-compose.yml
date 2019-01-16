@@ -7,7 +7,8 @@ website:
     - consul
 test:
   build: .
-  dockerfile: Dockerfile.test
+  container_name: test
+  dockerfile: Dockerfile
   links:
     - consul
     - website
