@@ -1,9 +1,9 @@
 assembly-versioning-scheme: MajorMinorPatch
 mode: ContinuousDeployment
 
- branches:
-
-   master:
+branches:
+  
+  master:
     regex: master
     tag: master
     increment: Minor
