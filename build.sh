@@ -4,12 +4,12 @@ set -e
 
 # Build
 dotnet restore
-dotnet build src/Winton.Extensions.Configuration.Consul --no-restore --configuration Release --framework netstandard2.0
-dotnet build test/Winton.Extensions.Configuration.Consul.Test --no-restore --configuration Release --framework netcoreapp2.2
-dotnet build test/Website --no-restore --configuration Release --framework netcoreapp2.2
+dotnet build src/Winton.Extensions.Configuration.Consul -c Release -f netstandard2.0 --no-restore
+dotnet build test/Winton.Extensions.Configuration.Consul.Test -c Release -f netcoreapp2.2 --no-restore
+dotnet build test/Website -c Release -f netcoreapp2.2 --no-restore
 
 # Unit Test
-dotnet test test/Winton.Extensions.Configuration.Consul.Test/ --no-build --no-restore --configuration Release
+dotnet test -c Release --no-build
 
 # Integration test
 if hash docker 2>/dev/null; then

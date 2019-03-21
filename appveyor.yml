@@ -8,11 +8,12 @@ configuration:
     - Release
 skip_tags: true
 before_build:
-    - dotnet restore
+    - dotnet tool install -g GitVersion.Tool --version 4.0.1-beta1-58
+    - dotnet gitversion /l console /output buildserver
 build_script:
-    - msbuild /p:GetVersion=True /p:WriteVersionInfoToBuildLog=True
+    - dotnet build -c Release -p:Version=%GitVersion_NuGetVersion%
 test_script:
-    - dotnet test test/Winton.Extensions.Configuration.Consul.Test/ --no-build --no-restore --configuration Release
+    - dotnet test -c Release --no-build
 artifacts:
 - path: .\**\*.nupkg
   name: NuGet

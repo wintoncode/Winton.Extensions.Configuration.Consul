@@ -1,0 +1,26 @@
+assembly-versioning-scheme: MajorMinorPatch
+mode: ContinuousDeployment
+
+branches:
+  
+  master:
+    regex: master
+    tag: master
+    increment: Minor
+    prevent-increment-of-merged-branch-version: true
+  feature:
+    regex: feature[/-]
+    tag: a{BranchName}
+    increment: Minor
+    prevent-increment-of-merged-branch-version: false
+  patch:
+    regex: patch[/-]
+    tag: useBranchName
+    increment: Patch
+    prevent-increment-of-merged-branch-version: false
+    source-branches: ['release']
+  release:
+    regex: release[/-]
+    tag: rc
+    increment: None
+    prevent-increment-of-merged-branch-version: false
