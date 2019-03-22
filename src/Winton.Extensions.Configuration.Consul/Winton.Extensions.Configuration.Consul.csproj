@@ -9,7 +9,7 @@
     <NoWarn>$(NoWarn);SA1101;SA1309;SA1413;</NoWarn>
     <PackageId>Winton.Extensions.Configuration.Consul</PackageId>
     <PackageIconUrl>https://raw.githubusercontent.com/wintoncode/Winton.Extensions.Configuration.Consul/master/icon.jpg</PackageIconUrl>
-    <PackageLicenseUrl>https://raw.githubusercontent.com/wintoncode/Winton.Extensions.Configuration.Consul/master/LICENSE</PackageLicenseUrl>
+    <PackageLicenseFile>LICENSE</PackageLicenseFile>
     <PackageProjectUrl>https://github.com/wintoncode/Winton.Extensions.Configuration.Consul</PackageProjectUrl>
     <PackageRequireLicenseAcceptance>False</PackageRequireLicenseAcceptance>
     <PackageTags>.NET;Core;dotnetcore;ASP.NET;aspnetcore;configuration;consul;winton;wintoncode</PackageTags>
@@ -26,6 +26,7 @@
 
   <ItemGroup>
     <AdditionalFiles Include="../../stylecop.json" />
+    <None Include="../../LICENSE" Pack="true" PackagePath=""/>
   </ItemGroup>
 
   <ItemGroup>
