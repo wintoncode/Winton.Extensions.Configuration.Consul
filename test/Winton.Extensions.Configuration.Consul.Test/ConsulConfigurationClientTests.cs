@@ -115,7 +115,7 @@ namespace Winton.Extensions.Configuration.Consul
                     .Returns(getKvTaskSource.Task);
 
                 ChangeToken.OnChange(
-                    () => _consulConfigurationClient.Watch("Test", null, default(CancellationToken)),
+                    () => _consulConfigurationClient.Watch("Test", null, null, default(CancellationToken)),
                     () => configChangedCompletion.SetResult(true));
 
                 getKvTaskSource.SetResult(
@@ -143,6 +143,7 @@ namespace Winton.Extensions.Configuration.Consul
 
                 _consulConfigurationClient.Watch(
                     "Test",
+                    null,
                     exceptionContext =>
                     {
                         actualException = exceptionContext.Exception;
@@ -171,6 +172,7 @@ namespace Winton.Extensions.Configuration.Consul
                 _consulConfigurationClient
                     .Watch(
                         "Test",
+                        null,
                         exceptionContext =>
                         {
                             watchCompletion.SetResult(false);
@@ -237,7 +239,7 @@ namespace Winton.Extensions.Configuration.Consul
                 // Calling it a second time should invoke a long polling with the index from the previous get call
                 var watchCompletion = new TaskCompletionSource<bool>();
                 _consulConfigurationClient
-                    .Watch("Test", null, default(CancellationToken))
+                    .Watch("Test", null, null, default(CancellationToken))
                     .RegisterChangeCallback(o => watchCompletion.SetResult(true), new object());
 
                 watchKvTaskSource.SetResult(
@@ -272,7 +274,7 @@ namespace Winton.Extensions.Configuration.Consul
                 // The KV result initiated by the first watch returns with an updated index of 1
                 var watchCompletion1 = new TaskCompletionSource<bool>();
                 _consulConfigurationClient
-                    .Watch("Test", null, default(CancellationToken))
+                    .Watch("Test", null, null, default(CancellationToken))
                     .RegisterChangeCallback(o => watchCompletion1.SetResult(true), new object());
 
                 watchKvTaskSource1.SetResult(
@@ -286,7 +288,7 @@ namespace Winton.Extensions.Configuration.Consul
                 // The KV result from the second watch returns with an updated index so that it can be determined that it ran inside the watch
                 var watchCompletion2 = new TaskCompletionSource<bool>();
                 _consulConfigurationClient
-                    .Watch("Test", null, default(CancellationToken))
+                    .Watch("Test", null, null, default(CancellationToken))
                     .RegisterChangeCallback(o => watchCompletion2.SetResult(true), new object());
 
                 watchKvTaskSource2.SetResult(

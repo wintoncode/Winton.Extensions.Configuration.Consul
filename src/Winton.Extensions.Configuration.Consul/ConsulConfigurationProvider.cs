@@ -31,7 +31,7 @@ namespace Winton.Extensions.Configuration.Consul
             if (source.ReloadOnChange)
             {
                 ChangeToken.OnChange(
-                    () => _consulConfigClient.Watch(_source.Key, _source.OnWatchException, _source.CancellationToken),
+                    () => _consulConfigClient.Watch(_source.Key, _source.BackoffOnError, _source.OnWatchException, _source.CancellationToken),
                     async () =>
                     {
                         await DoLoad(true).ConfigureAwait(false);

@@ -86,5 +86,10 @@ namespace Winton.Extensions.Configuration.Consul
         ///     Gets or sets a value indicating whether the source will be reloaded if the data in consul changes.
         /// </summary>
         bool ReloadOnChange { get; set; }
+
+        /// <summary>
+        ///     Gets or sets a value indicating how long to wait after an error, before retrying to fetch Consul changes
+        /// </summary>
+        TimeSpan? BackoffOnError { get; set; }
     }
 }

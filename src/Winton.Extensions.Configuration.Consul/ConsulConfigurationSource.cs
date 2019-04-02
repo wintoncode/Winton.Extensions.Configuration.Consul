@@ -47,6 +47,8 @@ namespace Winton.Extensions.Configuration.Consul
 
         public bool ReloadOnChange { get; set; } = false;
 
+        public TimeSpan? BackoffOnError { get; set; }
+
         public IConfigurationProvider Build(IConfigurationBuilder builder)
         {
             var consulClientFactory = new ConsulClientFactory(this);

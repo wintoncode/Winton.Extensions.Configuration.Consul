@@ -20,11 +20,13 @@ namespace Winton.Extensions.Configuration.Consul
 
         /// <summary>Watches for config changes at a specified key.</summary>
         /// <param name="key">The key whose value should be watched for changes.</param>
+        /// <param name="backoffOnError">The time to wait after an error occured before retrying.</param>
         /// <param name="onException">An action to be invoked if an exception occurs during the watch.</param>
         /// <param name="cancellationToken">A cancellation token that can be used to cancel the operation.</param>
         /// <returns>An <see cref="IChangeToken" /> that will indicated when changes have occured.</returns>
         IChangeToken Watch(
             string key,
+            TimeSpan? backoffOnError,
             Action<ConsulWatchExceptionContext> onException,
             CancellationToken cancellationToken);
     }

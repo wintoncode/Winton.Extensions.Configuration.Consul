@@ -33,10 +33,11 @@ namespace Winton.Extensions.Configuration.Consul
 
         public IChangeToken Watch(
             string key,
+            TimeSpan? backoffOnError,
             Action<ConsulWatchExceptionContext> onException,
             CancellationToken cancellationToken)
         {
-            Task.Run(() => PollForChanges(key, onException, cancellationToken));
+            Task.Run(() => PollForChanges(key, backoffOnError, onException, cancellationToken));
             return _reloadToken;
         }
 
@@ -79,6 +80,7 @@ namespace Winton.Extensions.Configuration.Consul
 
         private async Task PollForChanges(
             string key,
+            TimeSpan? backoffOnError,
             Action<ConsulWatchExceptionContext> onException,
             CancellationToken cancellationToken)
         {
@@ -99,6 +101,10 @@ namespace Winton.Extensions.Configuration.Consul
                 {
                     var exceptionContext = new ConsulWatchExceptionContext(cancellationToken, exception);
                     onException?.Invoke(exceptionContext);
+                    if (backoffOnError.HasValue)
+                    {
+                        await Task.Delay(backoffOnError.Value, cancellationToken);
+                    }
                 }
             }
         }
