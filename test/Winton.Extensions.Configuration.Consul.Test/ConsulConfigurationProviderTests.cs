@@ -260,7 +260,7 @@ namespace Winton.Extensions.Configuration.Consul
                         ccc =>
                             ccc.Watch(
                                 "Test",
-                                It.IsAny<Action<ConsulWatchExceptionContext>>(),
+                                It.IsAny<Func<ConsulWatchExceptionContext, TimeSpan>>(),
                                 default(CancellationToken)))
                     .Returns(_firstChangeToken)
                     .Returns(new ConfigurationReloadToken());
