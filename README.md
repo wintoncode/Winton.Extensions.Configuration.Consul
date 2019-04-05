@@ -82,7 +82,9 @@ public void Configure(IApplicationBuilder app, IHostingEnvironment env, IApplica
    An `Action<ConsulLoadExceptionContext>` that can be used to configure how exceptions thrown during the first load should be handled.
 * **`OnWatchException`**
 
-   An `Action<ConsulWatchExceptionContext>` that can be used to configure how exceptions thrown when watching for changes should be handled.
+   A `Func<ConsulWatchExceptionContext, TimeSpan>` that can be used to configure how exceptions thrown when watching for changes should be handled.
+   The `TimeSpan` that is returned is used to set a delay before retrying. 
+   The `ConsulWatchExceptionContext` provides data that can be used to implement a backoff strategy or to cancel watching altogether.
 * **`Optional`**
 
    A `bool` that indicates whether the config is optional. If `false` then it will throw during the first load if the config is missing for the given key. Defaults to `false`.
