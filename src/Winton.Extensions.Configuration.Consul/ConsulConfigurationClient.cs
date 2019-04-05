@@ -33,10 +33,10 @@ namespace Winton.Extensions.Configuration.Consul
 
         public IChangeToken Watch(
             string key,
-            Action<ConsulWatchExceptionContext> onException,
+            Func<ConsulWatchExceptionContext, TimeSpan> onException,
             CancellationToken cancellationToken)
         {
-            Task.Run(() => PollForChanges(key, onException, cancellationToken));
+            Task.Run(() => PollForChanges(key, onException, cancellationToken), cancellationToken);
             return _reloadToken;
         }
 
@@ -79,9 +79,10 @@ namespace Winton.Extensions.Configuration.Consul
 
         private async Task PollForChanges(
             string key,
-            Action<ConsulWatchExceptionContext> onException,
+            Func<ConsulWatchExceptionContext, TimeSpan> onException,
             CancellationToken cancellationToken)
         {
+            var consecutiveFailureCount = 0;
             while (!cancellationToken.IsCancellationRequested)
             {
                 try
@@ -94,11 +95,16 @@ namespace Winton.Extensions.Configuration.Consul
                         previousToken.OnReload();
                         return;
                     }
+
+                    consecutiveFailureCount = 0;
                 }
                 catch (Exception exception)
                 {
-                    var exceptionContext = new ConsulWatchExceptionContext(cancellationToken, exception);
-                    onException?.Invoke(exceptionContext);
+                    TimeSpan wait =
+                        onException?.Invoke(
+                            new ConsulWatchExceptionContext(cancellationToken, exception, ++consecutiveFailureCount)) ??
+                        TimeSpan.FromSeconds(5);
+                    await Task.Delay(wait, cancellationToken);
                 }
             }
         }

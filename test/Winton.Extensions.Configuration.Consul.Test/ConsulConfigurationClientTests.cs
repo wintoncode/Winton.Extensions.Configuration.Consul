@@ -130,7 +130,7 @@ namespace Winton.Extensions.Configuration.Consul
             }
 
             [Fact]
-            private async Task ShouldInvokeExceptionActionWhenWatchThrowsException()
+            private async Task ShouldInvokeOnExceptionWhenWatchThrowsException()
             {
                 Exception actualException = null;
                 var expectedException = new Exception();
@@ -147,6 +147,7 @@ namespace Winton.Extensions.Configuration.Consul
                     {
                         actualException = exceptionContext.Exception;
                         configChangedCompletion.SetResult(true);
+                        return TimeSpan.FromSeconds(5);
                     },
                     default(CancellationToken));
 
@@ -200,7 +201,7 @@ namespace Winton.Extensions.Configuration.Consul
 
                 await watchCompletion.Task;
 
-                Action verifying = () => _kvMock
+                _kvMock
                     .Verify(
                         kv => kv.List("Test", It.IsAny<QueryOptions>(), default(CancellationToken)),
                         Times.Exactly(6));

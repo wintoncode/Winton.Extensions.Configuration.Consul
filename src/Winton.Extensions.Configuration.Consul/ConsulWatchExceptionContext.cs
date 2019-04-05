@@ -11,9 +11,13 @@ namespace Winton.Extensions.Configuration.Consul
     /// </summary>
     public sealed class ConsulWatchExceptionContext
     {
-        internal ConsulWatchExceptionContext(CancellationToken cancellationToken, Exception exception)
+        internal ConsulWatchExceptionContext(
+            CancellationToken cancellationToken,
+            Exception exception,
+            int consecutiveFailureCount)
         {
             Exception = exception;
+            ConsecutiveFailureCount = consecutiveFailureCount;
             CancellationToken = cancellationToken;
         }
 
@@ -21,6 +25,14 @@ namespace Winton.Extensions.Configuration.Consul
         ///     Gets the <see cref="CancellationToken" /> for the watch task which can be used to terminate it.
         /// </summary>
         public CancellationToken CancellationToken { get; }
+
+        /// <summary>
+        ///     Gets the number of consecutive failures that have occurred while watching for configuration changes.
+        /// </summary>
+        /// <remarks>
+        ///     This can be used to vary the time between retries, for example to create an exponential backoff algorithm.
+        /// </remarks>
+        public int ConsecutiveFailureCount { get; }
 
         /// <summary>
         ///     Gets the <see cref="Exception" /> that occured.

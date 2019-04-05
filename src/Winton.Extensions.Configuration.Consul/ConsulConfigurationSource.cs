@@ -39,7 +39,7 @@ namespace Winton.Extensions.Configuration.Consul
 
         public Action<ConsulLoadExceptionContext> OnLoadException { get; set; }
 
-        public Action<ConsulWatchExceptionContext> OnWatchException { get; set; }
+        public Func<ConsulWatchExceptionContext, TimeSpan> OnWatchException { get; set; }
 
         public bool Optional { get; set; } = false;
 
