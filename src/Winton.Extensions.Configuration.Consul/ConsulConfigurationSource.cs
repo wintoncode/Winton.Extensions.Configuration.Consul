@@ -47,6 +47,8 @@ namespace Winton.Extensions.Configuration.Consul
 
         public bool ReloadOnChange { get; set; } = false;
 
+        public bool PersistenceToLocal { get; set; } = false;
+
         public IConfigurationProvider Build(IConfigurationBuilder builder)
         {
             var consulClientFactory = new ConsulClientFactory(this);

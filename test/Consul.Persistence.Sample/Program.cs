@@ -34,6 +34,7 @@ namespace Consul.Persistence.Sample
                     options.ReloadOnChange = true;
                     options.OnLoadException = exceptionContext => { exceptionContext.Ignore = true; };
                     options.OnWatchException = _ => { return new TimeSpan(0, 0, 10); };
+                    options.PersistenceToLocal = true; // ADD Persistence
                 });
             })
             .UseStartup<Startup>();

@@ -90,5 +90,12 @@ namespace Winton.Extensions.Configuration.Consul
         ///     Gets or sets a value indicating whether the source will be reloaded if the data in consul changes.
         /// </summary>
         bool ReloadOnChange { get; set; }
+
+        /// <summary>
+        ///     Gets or sets a value indicating whether to persist the configuration locally.
+        ///     Unable to connect to the network, Read local configuration.
+        ///     Defaults(false).
+        /// </summary>
+        bool PersistenceToLocal { get; set; }
     }
 }

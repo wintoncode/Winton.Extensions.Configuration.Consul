@@ -2,6 +2,8 @@
 // Licensed under the Apache License, Version 2.0. See LICENCE in the project root for license information.
 
 using System;
+using System.Collections.Generic;
+using System.IO;
 using System.Linq;
 using System.Threading.Tasks;
 using Consul;
@@ -59,6 +61,7 @@ namespace Winton.Extensions.Configuration.Consul
 
         private async Task DoLoad(bool reloading)
         {
+            var isSetData = false;
             try
             {
                 QueryResult<KVPair[]> result = await _consulConfigClient
@@ -82,9 +85,79 @@ namespace Winton.Extensions.Configuration.Consul
                     .Where(kvp => kvp.HasValue())
                     .SelectMany(kvp => kvp.ConvertToConfig(keyToRemove, _source.Parser))
                     .ToDictionary(kvp => kvp.Key, kvp => kvp.Value, StringComparer.OrdinalIgnoreCase);
+
+                isSetData = true;
+
+                // ADD Persistence json
+                if (_source.PersistenceToLocal && (result?.Response?.Length ?? 0) > 0)
+                {
+                    var subPaths = _source.Key.Trim().Trim('/').Split('/');
+                    var path = AppDomain.CurrentDomain.BaseDirectory;
+                    foreach (var sub in subPaths)
+                    {
+                        path = Path.Combine(path, sub);
+                    }
+
+                    if (!Directory.Exists(path))
+                    {
+                        Directory.CreateDirectory(path);
+                    }
+
+                    foreach (var item in result.Response)
+                    {
+                        if (string.IsNullOrWhiteSpace(item.Key) || (item.Value?.Length ?? 0) <= 0)
+                        {
+                            continue;
+                        }
+
+                        var name = RemoveStart(item.Key, keyToRemove).Trim().Trim('/');
+                        var fileName = Path.Combine(path, $"{name}.json");
+                        File.WriteAllBytes(fileName, item.Value);
+                    }
+                }
             }
             catch (Exception exception)
             {
+                try
+                {
+                    // Unable to connect to the network, Read local configuration
+                    if (_source.PersistenceToLocal && !isSetData)
+                    {
+                        var subPaths = _source.Key.Trim().Trim('/').Split('/');
+                        var path = AppDomain.CurrentDomain.BaseDirectory;
+                        foreach (var sub in subPaths)
+                        {
+                            path = Path.Combine(path, sub);
+                        }
+
+                        var files = Directory.GetFiles(path, "*.json", SearchOption.TopDirectoryOnly);
+                        var kvs = new List<KVPair>();
+                        foreach (var filePath in files)
+                        {
+                            if (File.Exists(filePath))
+                            {
+                                var bs = File.ReadAllBytes(filePath);
+                                var fileName = Path.GetFileName(filePath);
+                                if ((bs?.Length ?? 0) > 0)
+                                {
+                                    var kv = new KVPair(fileName.Replace(".json", string.Empty));
+                                    kv.Value = bs;
+                                    kvs.Add(kv);
+                                }
+                            }
+                        }
+
+                        string keyToRemove = _source.KeyToRemove ?? _source.Key;
+
+                        Data = kvs.SelectMany(kvp => kvp.ConvertToConfig(keyToRemove, _source.Parser))
+                            .ToDictionary(kvp => kvp.Key, kvp => kvp.Value, StringComparer.OrdinalIgnoreCase);
+                    }
+                }
+                catch (Exception perExp)
+                {
+                    exception = perExp;
+                }
+
                 var exceptionContext = new ConsulLoadExceptionContext(_source, exception);
                 _source.OnLoadException?.Invoke(exceptionContext);
                 if (!exceptionContext.Ignore)
@@ -92,6 +165,11 @@ namespace Winton.Extensions.Configuration.Consul
                     throw;
                 }
             }
+        }
+
+        private string RemoveStart(string s, string toRemove)
+        {
+            return s.StartsWith(toRemove) ? s.Remove(0, toRemove.Length) : s;
         }
     }
 }
