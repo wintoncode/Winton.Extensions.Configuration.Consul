@@ -95,6 +95,28 @@ public void Configure(IApplicationBuilder app, IHostingEnvironment env, IApplica
 
    A `bool` indicating whether to reload the config when it changes in Consul.
    If `true` it will watch the configured key for changes. When a change occurs the config will be asynchronously reloaded and the `IChangeToken` will be triggered to signal that the config has been reloaded. Defaults to `false`.
+* **`PersistenceToLocal`** 
+   
+   Gets or sets a value indicating whether to persist the configuration locally. 
+   
+   Unable to connect to the network, Read local configuration (local file must exist). 
+   
+   Defaults to `false`.
+   
+   Please reference: Consul.Persistence.Sample
+
+```csharp
+config.AddConsul("TestApp/Dev", cancellationTokenSource.Token, options =>
+{
+    options.ConsulConfigurationOptions = _ => { _.Address = new Uri("http://127.0.0.1:8500"); };
+    options.Optional = true;
+    options.ReloadOnChange = true;
+    options.OnLoadException = exceptionContext => { exceptionContext.Ignore = true; };
+    options.OnWatchException = _ => { return new TimeSpan(0, 0, 10); };
+    options.PersistenceToLocal = true; // ADD Persistence
+});
+```
+
 
 ## Storing Config as Expanded Keys In Consul
 
