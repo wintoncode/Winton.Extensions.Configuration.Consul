@@ -42,19 +42,7 @@ namespace Winton.Extensions.Configuration.Consul
 
         public override void Load()
         {
-            try
-            {
-                DoLoad(false).Wait();
-            }
-            catch (AggregateException aggregateException)
-            {
-                if (aggregateException.InnerException != null)
-                {
-                    throw aggregateException.InnerException;
-                }
-
-                throw;
-            }
+            DoLoad(false).GetAwaiter().GetResult();
         }
 
         private async Task DoLoad(bool reloading)
