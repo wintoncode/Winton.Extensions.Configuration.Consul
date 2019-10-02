@@ -261,7 +261,7 @@ namespace Winton.Extensions.Configuration.Consul
                             ccc.Watch(
                                 "Test",
                                 It.IsAny<Func<ConsulWatchExceptionContext, TimeSpan>>(),
-                                default(CancellationToken)))
+                                It.IsAny<CancellationToken>()))
                     .Returns(_firstChangeToken)
                     .Returns(new ConfigurationReloadToken());
 
@@ -331,7 +331,7 @@ namespace Winton.Extensions.Configuration.Consul
                 Action verifying =
                     () =>
                         _consulConfigClientMock.Verify(
-                            ccs => ccs.Watch("Test", _source.OnWatchException, default(CancellationToken)),
+                            ccs => ccs.Watch("Test", _source.OnWatchException, It.IsAny<CancellationToken>()),
                             Times.Once);
                 verifying.Should().NotThrow();
             }

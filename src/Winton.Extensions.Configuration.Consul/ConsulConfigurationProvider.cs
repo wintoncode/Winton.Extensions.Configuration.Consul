@@ -3,6 +3,7 @@
 
 using System;
 using System.Linq;
+using System.Threading;
 using System.Threading.Tasks;
 using Consul;
 using Microsoft.Extensions.Configuration;
@@ -11,10 +12,12 @@ using Winton.Extensions.Configuration.Consul.Extensions;
 
 namespace Winton.Extensions.Configuration.Consul
 {
-    internal sealed class ConsulConfigurationProvider : ConfigurationProvider
+    internal sealed class ConsulConfigurationProvider : ConfigurationProvider, IDisposable
     {
         private readonly IConsulConfigurationClient _consulConfigClient;
         private readonly IConsulConfigurationSource _source;
+        private readonly CancellationTokenSource _cancellationTokenSource;
+        private readonly IDisposable _changeTokenRegistration;
 
         public ConsulConfigurationProvider(
             IConsulConfigurationSource source,
@@ -30,19 +33,30 @@ namespace Winton.Extensions.Configuration.Consul
 
             if (source.ReloadOnChange)
             {
-                ChangeToken.OnChange(
-                    () => _consulConfigClient.Watch(_source.Key, _source.OnWatchException, _source.CancellationToken),
+                _cancellationTokenSource = new CancellationTokenSource();
+                _changeTokenRegistration = ChangeToken.OnChange(
+                    () => _consulConfigClient.Watch(_source.Key, _source.OnWatchException, _cancellationTokenSource.Token),
                     async () =>
                     {
                         await DoLoad(true).ConfigureAwait(false);
                         OnReload();
                     });
+                if (_source.CancellationToken.CanBeCanceled)
+                {
+                    _source.CancellationToken.Register(_cancellationTokenSource.Cancel);
+                }
             }
         }
 
         public override void Load()
         {
             DoLoad(false).GetAwaiter().GetResult();
+        }
+
+        public void Dispose()
+        {
+            _cancellationTokenSource?.Cancel();
+            _changeTokenRegistration?.Dispose();
         }
 
         private async Task DoLoad(bool reloading)
