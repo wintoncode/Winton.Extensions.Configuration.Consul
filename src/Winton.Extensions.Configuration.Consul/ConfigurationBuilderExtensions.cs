@@ -19,6 +19,20 @@ namespace Winton.Extensions.Configuration.Consul
         /// </summary>
         /// <param name="builder">The builder to add consul to.</param>
         /// <param name="key">The key in consul where the configuration is located.</param>
+        /// <returns>The builder</returns>
+        public static IConfigurationBuilder AddConsul(
+            this IConfigurationBuilder builder,
+            string key)
+        {
+            return builder.AddConsul(key, options => { });
+        }
+
+        /// <summary>
+        ///     Adds Consul as a configuration source to the <see cref="IConfigurationBuilder" />
+        ///     using the default settings in <see cref="IConsulConfigurationSource" />.
+        /// </summary>
+        /// <param name="builder">The builder to add consul to.</param>
+        /// <param name="key">The key in consul where the configuration is located.</param>
         /// <param name="cancellationToken">
         ///     The <see cref="CancellationToken" /> used to cancel any open Consul connections or
         ///     watchers.
@@ -30,6 +44,22 @@ namespace Winton.Extensions.Configuration.Consul
             CancellationToken cancellationToken)
         {
             return builder.AddConsul(key, cancellationToken, options => { });
+        }
+
+        /// <summary>
+        ///     Adds Consul as a configuration source to the <see cref="IConfigurationBuilder" />
+        ///     and applies the given overrides to the <see cref="IConsulConfigurationSource" />.
+        /// </summary>
+        /// <param name="builder">The builder to add consul to</param>
+        /// <param name="key">The key in consul where the configuration is located</param>
+        /// <param name="options">An action used to configure the options of the <see cref="IConsulConfigurationSource" /></param>
+        /// <returns>The builder</returns>
+        public static IConfigurationBuilder AddConsul(
+            this IConfigurationBuilder builder,
+            string key,
+            Action<IConsulConfigurationSource> options)
+        {
+            return builder.AddConsul(key, default, options);
         }
 
         /// <summary>
