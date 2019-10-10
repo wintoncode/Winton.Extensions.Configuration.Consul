@@ -21,9 +21,14 @@ namespace Winton.Extensions.Configuration.Consul.Website
         {
             app
                 .UseDeveloperExceptionPage()
-                .UseMvc()
                 .UseSwagger()
-                .UseSwaggerUI(c => { c.SwaggerEndpoint($"{_Version}/swagger.json", _AppTitle); });
+                .UseSwaggerUI(
+                    c =>
+                    {
+                        c.SwaggerEndpoint($"swagger/{_Version}/swagger.json", _AppTitle);
+                        c.RoutePrefix = string.Empty;
+                    })
+                .UseMvc();
         }
 
         public void ConfigureServices(IServiceCollection services)
