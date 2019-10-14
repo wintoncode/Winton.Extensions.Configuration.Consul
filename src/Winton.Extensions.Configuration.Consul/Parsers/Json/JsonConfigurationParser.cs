@@ -10,7 +10,7 @@ namespace Winton.Extensions.Configuration.Consul.Parsers.Json
 {
     /// <inheritdoc />
     /// <summary>
-    ///     Implemenation of <see cref="IConfigurationParser" /> for parsing JSON Configuration
+    ///     Implementation of <see cref="IConfigurationParser" /> for parsing JSON Configuration.
     /// </summary>
     public sealed class JsonConfigurationParser : IConfigurationParser
     {

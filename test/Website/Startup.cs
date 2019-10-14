@@ -1,8 +1,7 @@
 using Microsoft.AspNetCore.Builder;
-using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
-using Swashbuckle.AspNetCore.Swagger;
+using Microsoft.OpenApi.Models;
 
 namespace Winton.Extensions.Configuration.Consul.Website
 {
@@ -28,16 +27,17 @@ namespace Winton.Extensions.Configuration.Consul.Website
                         c.SwaggerEndpoint($"swagger/{_Version}/swagger.json", _AppTitle);
                         c.RoutePrefix = string.Empty;
                     })
-                .UseMvc();
+                .UseRouting()
+                .UseEndpoints(options => options.MapControllers());
         }
 
         public void ConfigureServices(IServiceCollection services)
         {
             services
-                .AddSwaggerGen(c => { c.SwaggerDoc(_Version, new Info { Title = _AppTitle, Version = _Version }); })
+                .AddSwaggerGen(
+                    c => { c.SwaggerDoc(_Version, new OpenApiInfo { Title = _AppTitle, Version = _Version }); })
                 .AddSingleton(_configuration)
-                .AddMvc()
-                .SetCompatibilityVersion(CompatibilityVersion.Version_2_2);
+                .AddControllers();
         }
     }
 }

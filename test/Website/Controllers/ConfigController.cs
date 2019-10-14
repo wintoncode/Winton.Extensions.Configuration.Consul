@@ -3,20 +3,21 @@ using Microsoft.Extensions.Configuration;
 
 namespace Winton.Extensions.Configuration.Consul.Website.Controllers
 {
+    [ApiController]
     [Route("[controller]")]
-    public sealed class ConfigController : Controller
+    public sealed class ConfigController : ControllerBase
     {
-        private readonly IConfiguration _configurationRoot;
+        private readonly IConfiguration _configuration;
 
         public ConfigController(IConfiguration configuration)
         {
-            _configurationRoot = configuration;
+            _configuration = configuration;
         }
 
         [HttpGet("{key}")]
         public IActionResult GetValueForKey(string key)
         {
-            return Json(_configurationRoot[key]);
+            return Ok(_configuration[key]);
         }
     }
 }
