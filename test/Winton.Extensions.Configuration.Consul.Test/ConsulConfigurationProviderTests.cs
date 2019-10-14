@@ -28,7 +28,7 @@ namespace Winton.Extensions.Configuration.Consul
             [Fact]
             public void ShouldThrowIfParserIsNull()
             {
-                var source = new ConsulConfigurationSource("Test", default(CancellationToken))
+                var source = new ConsulConfigurationSource("Test")
                 {
                     Parser = null
                 };
@@ -49,7 +49,7 @@ namespace Winton.Extensions.Configuration.Consul
 
             public Load()
             {
-                _source = new ConsulConfigurationSource("path/test", default(CancellationToken))
+                _source = new ConsulConfigurationSource("path/test")
                 {
                     Parser = _configParserMock.Object,
                     ReloadOnChange = false
@@ -249,7 +249,7 @@ namespace Winton.Extensions.Configuration.Consul
 
             public Reload()
             {
-                _source = new ConsulConfigurationSource("Test", default(CancellationToken))
+                _source = new ConsulConfigurationSource("Test")
                 {
                     Parser = _configParserMock.Object,
                     ReloadOnChange = true

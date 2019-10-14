@@ -21,7 +21,6 @@ namespace Winton.Extensions.Configuration.Consul.Website
                         builder
                             .AddConsul(
                                 "appsettings.json",
-                                CancellationTokenSource.Token,
                                 options =>
                                 {
                                     options.ConsulConfigurationOptions =
@@ -37,8 +36,6 @@ namespace Winton.Extensions.Configuration.Consul.Website
         public static void Main(string[] args)
         {
             CreateHostBuilder(args).Build().Run();
-            CancellationTokenSource.Cancel();
-            CancellationTokenSource.Dispose();
         }
     }
 }

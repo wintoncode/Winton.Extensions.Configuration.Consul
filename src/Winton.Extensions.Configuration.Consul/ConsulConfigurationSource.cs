@@ -13,7 +13,7 @@ namespace Winton.Extensions.Configuration.Consul
 {
     internal sealed class ConsulConfigurationSource : IConsulConfigurationSource
     {
-        public ConsulConfigurationSource(string key, CancellationToken cancellationToken)
+        public ConsulConfigurationSource(string key)
         {
             if (string.IsNullOrWhiteSpace(key))
             {
@@ -21,11 +21,8 @@ namespace Winton.Extensions.Configuration.Consul
             }
 
             Key = key;
-            CancellationToken = cancellationToken;
             Parser = new JsonConfigurationParser();
         }
-
-        public CancellationToken CancellationToken { get; }
 
         public Action<ConsulClientConfiguration> ConsulConfigurationOptions { get; set; }
 

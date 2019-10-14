@@ -30,27 +30,23 @@ namespace Winton.Extensions.Configuration.Consul
 
             _consulConfigClient = consulConfigClient;
             _source = source;
+            _cancellationTokenSource = new CancellationTokenSource();
 
             if (source.ReloadOnChange)
             {
-                _cancellationTokenSource = new CancellationTokenSource();
                 _changeTokenRegistration = ChangeToken.OnChange(
                     () => _consulConfigClient.Watch(_source.Key, _source.OnWatchException, _cancellationTokenSource.Token),
                     async () =>
                     {
-                        await DoLoad(true).ConfigureAwait(false);
+                        await DoLoad(true, _cancellationTokenSource.Token).ConfigureAwait(false);
                         OnReload();
                     });
-                if (_source.CancellationToken.CanBeCanceled)
-                {
-                    _source.CancellationToken.Register(_cancellationTokenSource.Cancel);
-                }
             }
         }
 
         public override void Load()
         {
-            DoLoad(false).GetAwaiter().GetResult();
+            DoLoad(false, _cancellationTokenSource.Token).GetAwaiter().GetResult();
         }
 
         public void Dispose()
@@ -59,12 +55,12 @@ namespace Winton.Extensions.Configuration.Consul
             _changeTokenRegistration?.Dispose();
         }
 
-        private async Task DoLoad(bool reloading)
+        private async Task DoLoad(bool reloading, CancellationToken token)
         {
             try
             {
                 QueryResult<KVPair[]> result = await _consulConfigClient
-                    .GetConfig(_source.Key, _source.CancellationToken)
+                    .GetConfig(_source.Key, token)
                     .ConfigureAwait(false);
                 if (!result.HasValue() && !_source.Optional)
                 {

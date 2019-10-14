@@ -18,13 +18,6 @@ namespace Winton.Extensions.Configuration.Consul
     public interface IConsulConfigurationSource : IConfigurationSource
     {
         /// <summary>
-        ///     Gets a <see cref="CancellationToken" /> that can be used to cancel any consul requests
-        ///     either loading or watching via long polling.
-        ///     It is recommended that this is cancelled during shut down.
-        /// </summary>
-        CancellationToken CancellationToken { get; }
-
-        /// <summary>
         ///     Gets or sets an <see cref="Action" /> to be applied to the <see cref="ConsulClientConfiguration" />
         ///     during construction of the <see cref="IConsulClient" />.
         ///     Allows the default config options for Consul to be overriden.
