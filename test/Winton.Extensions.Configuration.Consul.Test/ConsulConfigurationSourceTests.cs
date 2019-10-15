@@ -1,5 +1,4 @@
 using System;
-using System.Threading;
 using FluentAssertions;
 using Winton.Extensions.Configuration.Consul.Parsers;
 using Xunit;
@@ -11,7 +10,7 @@ namespace Winton.Extensions.Configuration.Consul
         public sealed class Constructor : ConsulConfigurationSourceTests
         {
             [Fact]
-            private void ShouldHaveJsonConfgurationParserByDefault()
+            private void ShouldHaveJsonConfigurationParserByDefault()
             {
                 var source = new ConsulConfigurationSource("Key");
 

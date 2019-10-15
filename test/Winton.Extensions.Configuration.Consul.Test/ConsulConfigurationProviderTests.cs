@@ -51,7 +51,7 @@ namespace Winton.Extensions.Configuration.Consul
             {
                 var source = new ConsulConfigurationSource("Test")
                 {
-                    Parser = null
+                    Parser = null!
                 };
 
                 // ReSharper disable once ObjectCreationAsStatement
@@ -258,14 +258,14 @@ namespace Winton.Extensions.Configuration.Consul
 
                 _provider.Load();
 
-                _provider.TryGet("Key", out string value);
+                _provider.TryGet("Key", out var value);
                 value.Should().Be("Value");
             }
 
             [Fact]
             private void ShouldSetLoadExceptionContextWhenExceptionDuringLoad()
             {
-                ConsulLoadExceptionContext exceptionContext = null;
+                ConsulLoadExceptionContext? exceptionContext = null;
                 var exception = new Exception("Failed to load from Consul agent");
 
                 _kvEndpoint
@@ -292,7 +292,7 @@ namespace Winton.Extensions.Configuration.Consul
                     .Setup(kv => kv.List("Test", It.IsAny<QueryOptions>(), It.IsAny<CancellationToken>()))
                     .ThrowsAsync(new Exception("Error"));
 
-                Action loading = _provider.Invoking(p => p.Load());
+                var loading = _provider.Invoking(p => p.Load());
 
                 loading.Should().Throw<Exception>().WithMessage("Error");
             }
@@ -306,7 +306,7 @@ namespace Winton.Extensions.Configuration.Consul
                     .Setup(kv => kv.List("Test", It.IsAny<QueryOptions>(), It.IsAny<CancellationToken>()))
                     .ReturnsAsync(new QueryResult<KVPair[]> { StatusCode = HttpStatusCode.NotFound });
 
-                Action loading = _provider.Invoking(p => p.Load());
+                var loading = _provider.Invoking(p => p.Load());
                 loading
                     .Should()
                     .Throw<Exception>()
@@ -393,7 +393,7 @@ namespace Winton.Extensions.Configuration.Consul
 
                 await pollingCompleted.Task;
 
-                _provider.TryGet("Key", out string _).Should().BeTrue();
+                _provider.TryGet("Key", out _).Should().BeTrue();
             }
 
             [Fact]
@@ -455,7 +455,7 @@ namespace Winton.Extensions.Configuration.Consul
 
                 await reload.Task;
 
-                _provider.TryGet("Key", out string value);
+                _provider.TryGet("Key", out var value);
                 value.Should().Be("Test2");
             }
 
@@ -520,7 +520,7 @@ namespace Winton.Extensions.Configuration.Consul
                         (_, options, __) =>
                         {
                             queryOptions.Add(options);
-                            if (results.TryDequeue(out QueryResult<KVPair[]> result))
+                            if (results.TryDequeue(out var result))
                             {
                                 return Task.FromResult(result);
                             }
@@ -564,7 +564,7 @@ namespace Winton.Extensions.Configuration.Consul
                         (_, options, __) =>
                         {
                             queryOptions.Add(options);
-                            if (results.TryDequeue(out QueryResult<KVPair[]> result))
+                            if (results.TryDequeue(out var result))
                             {
                                 return Task.FromResult(result);
                             }
@@ -607,7 +607,7 @@ namespace Winton.Extensions.Configuration.Consul
                         (_, options, __) =>
                         {
                             queryOptions.Add(options);
-                            if (results.TryDequeue(out QueryResult<KVPair[]> result))
+                            if (results.TryDequeue(out var result))
                             {
                                 return Task.FromResult(result);
                             }

@@ -2,11 +2,8 @@
 
   <PropertyGroup>
     <AssemblyName>Winton.Extensions.Configuration.Consul.Test.Net461Website</AssemblyName>
-    <GenerateDocumentationFile>False</GenerateDocumentationFile>
-    <NoWarn>$(NoWarn);SA0001;SA1101;SA1309;SA1413;SA1600;SA1633;SA1652</NoWarn>
     <RootNamespace>Winton.Extensions.Configuration.Consul.Net461Website</RootNamespace>
     <TargetFramework>net461</TargetFramework>
-    <TreatWarningsAsErrors>True</TreatWarningsAsErrors>
   </PropertyGroup>
 
   <ItemGroup>
@@ -16,7 +13,6 @@
   <ItemGroup>
     <PackageReference Include="Microsoft.AspNetCore" Version="2.2.0" />
     <PackageReference Include="Microsoft.AspNetCore.Mvc" Version="2.2.0" />
-    <PackageReference Include="StyleCop.Analyzers" Version="1.1.118" PrivateAssets="All" />
     <PackageReference Include="Swashbuckle.AspNetCore" Version="5.0.0-rc4" />
   </ItemGroup>
 

@@ -1,0 +1,15 @@
+<Project>
+  <PropertyGroup>
+    <Authors>Winton</Authors>
+    <Company>Winton</Company>
+    <Copyright>Copyright 2019 Winton</Copyright>
+    <CodeAnalysisRuleSet>$(MSBuildThisFileDirectory)Rules.ruleset</CodeAnalysisRuleSet>
+    <LangVersion>8.0</LangVersion>
+    <Nullable>enable</Nullable>
+    <TreatWarningsAsErrors>True</TreatWarningsAsErrors>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="StyleCop.Analyzers" Version="1.1.118" PrivateAssets="All" />
+  </ItemGroup>
+</Project>

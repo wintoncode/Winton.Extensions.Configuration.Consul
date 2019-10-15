@@ -20,12 +20,10 @@ namespace Winton.Extensions.Configuration.Consul.Parsers
             [Fact]
             private void ShouldParseSimpleValueFromStream()
             {
-                using (Stream stream = new MemoryStream(Encoding.UTF8.GetBytes("value")))
-                {
-                    IDictionary<string, string> result = _parser.Parse(stream);
+                using Stream stream = new MemoryStream(Encoding.UTF8.GetBytes("value"));
+                var result = _parser.Parse(stream);
 
-                    result.Should().BeEquivalentTo(new Dictionary<string, string> { { string.Empty, "value" } });
-                }
+                result.Should().BeEquivalentTo(new Dictionary<string, string> { { string.Empty, "value" } });
             }
         }
     }
