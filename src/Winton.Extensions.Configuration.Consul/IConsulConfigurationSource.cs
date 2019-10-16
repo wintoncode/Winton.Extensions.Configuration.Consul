@@ -13,7 +13,7 @@ namespace Winton.Extensions.Configuration.Consul
 {
     /// <inheritdoc />
     /// <summary>
-    ///     An <see cref="IConfigurationSource" /> for the ConsulConfigurationProvider
+    ///     An <see cref="IConfigurationSource" /> for the ConsulConfigurationProvider.
     /// </summary>
     public interface IConsulConfigurationSource : IConfigurationSource
     {

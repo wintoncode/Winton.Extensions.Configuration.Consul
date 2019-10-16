@@ -1,6 +1,6 @@
-FROM microsoft/dotnet:2.2-aspnetcore-runtime
+FROM mcr.microsoft.com/dotnet/core/aspnet:3.0
 
-COPY bin/Release/netcoreapp2.2/publish /app
+COPY bin/Release/netcoreapp3.0/publish /app
 WORKDIR /app
  
 EXPOSE 80/tcp

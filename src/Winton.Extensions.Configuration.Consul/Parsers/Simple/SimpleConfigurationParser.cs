@@ -8,7 +8,7 @@ namespace Winton.Extensions.Configuration.Consul.Parsers.Simple
 {
     /// <inheritdoc />
     /// <summary>
-    ///     Implemenation of <see cref="IConfigurationParser" /> for parsing simple values
+    ///     Implementation of <see cref="IConfigurationParser" /> for parsing simple values.
     /// </summary>
     public sealed class SimpleConfigurationParser : IConfigurationParser
     {
