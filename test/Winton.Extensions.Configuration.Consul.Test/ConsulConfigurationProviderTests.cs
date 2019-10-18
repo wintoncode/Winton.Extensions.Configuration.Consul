@@ -64,7 +64,7 @@ namespace Winton.Extensions.Configuration.Consul
                 var calledOnLoadException = false;
 
                 _consulConfigClientMock
-                    .Setup(ccc => ccc.GetConfig("path/test", default(CancellationToken)))
+                    .Setup(ccc => ccc.GetConfig("path/test", It.IsAny<CancellationToken>()))
                     .ThrowsAsync(new Exception());
                 _source.OnLoadException = context =>
                 {
@@ -82,7 +82,7 @@ namespace Winton.Extensions.Configuration.Consul
             {
                 _source.Optional = true;
                 _consulConfigClientMock
-                    .Setup(ccc => ccc.GetConfig("path/test", default(CancellationToken)))
+                    .Setup(ccc => ccc.GetConfig("path/test", It.IsAny<CancellationToken>()))
                     .ReturnsAsync(new QueryResult<KVPair[]> { StatusCode = HttpStatusCode.NotFound });
 
                 _consulConfigProvider.Load();
@@ -95,7 +95,7 @@ namespace Winton.Extensions.Configuration.Consul
             {
                 _source.Optional = true;
                 _consulConfigClientMock
-                    .Setup(ccc => ccc.GetConfig("path/test", default(CancellationToken)))
+                    .Setup(ccc => ccc.GetConfig("path/test", It.IsAny<CancellationToken>()))
                     .ReturnsAsync(
                         new QueryResult<KVPair[]>
                         {
@@ -116,7 +116,7 @@ namespace Winton.Extensions.Configuration.Consul
             private void ShouldNotThrowExceptionIfOnLoadExceptionIsSetToIgnore()
             {
                 _consulConfigClientMock
-                    .Setup(ccc => ccc.GetConfig("path/test", default(CancellationToken)))
+                    .Setup(ccc => ccc.GetConfig("path/test", It.IsAny<CancellationToken>()))
                     .ThrowsAsync(new Exception("Failed to load from Consul agent"));
                 _source.OnLoadException = exceptionContext => { exceptionContext.Ignore = true; };
 
@@ -135,7 +135,7 @@ namespace Winton.Extensions.Configuration.Consul
                     .Setup(cp => cp.Parse(It.IsAny<MemoryStream>()))
                     .Returns(new Dictionary<string, string> { { "kEy", "Value" } });
                 _consulConfigClientMock
-                    .Setup(ccc => ccc.GetConfig("path/test", default(CancellationToken)))
+                    .Setup(ccc => ccc.GetConfig("path/test", It.IsAny<CancellationToken>()))
                     .ReturnsAsync(
                         new QueryResult<KVPair[]>
                         {
@@ -160,7 +160,7 @@ namespace Winton.Extensions.Configuration.Consul
                     .Setup(cp => cp.Parse(It.IsAny<MemoryStream>()))
                     .Returns(new Dictionary<string, string> { { "Key", "Value" } });
                 _consulConfigClientMock
-                    .Setup(ccc => ccc.GetConfig("path/test", default(CancellationToken)))
+                    .Setup(ccc => ccc.GetConfig("path/test", It.IsAny<CancellationToken>()))
                     .ReturnsAsync(
                         new QueryResult<KVPair[]>
                         {
@@ -184,7 +184,7 @@ namespace Winton.Extensions.Configuration.Consul
                 var expectedException = new Exception("Failed to load from Consul agent");
 
                 _consulConfigClientMock
-                    .Setup(ccc => ccc.GetConfig("path/test", default(CancellationToken)))
+                    .Setup(ccc => ccc.GetConfig("path/test", It.IsAny<CancellationToken>()))
                     .ThrowsAsync(expectedException);
                 _source.OnLoadException = context =>
                 {
@@ -202,7 +202,7 @@ namespace Winton.Extensions.Configuration.Consul
             {
                 ConsulLoadExceptionContext exceptionContext = null;
                 _consulConfigClientMock
-                    .Setup(ccc => ccc.GetConfig("path/test", default(CancellationToken)))
+                    .Setup(ccc => ccc.GetConfig("path/test", It.IsAny<CancellationToken>()))
                     .ThrowsAsync(new Exception());
                 _source.OnLoadException = context =>
                 {
@@ -219,7 +219,7 @@ namespace Winton.Extensions.Configuration.Consul
             private void ShouldThrowExceptionIfOnLoadExceptionDoesNotSetIgnoreWhenExceptionDuringLoad()
             {
                 _consulConfigClientMock
-                    .Setup(ccc => ccc.GetConfig("path/test", default(CancellationToken)))
+                    .Setup(ccc => ccc.GetConfig("path/test", It.IsAny<CancellationToken>()))
                     .ThrowsAsync(new Exception("Error"));
                 _source.OnLoadException = exceptionContext => { exceptionContext.Ignore = false; };
 
@@ -233,7 +233,7 @@ namespace Winton.Extensions.Configuration.Consul
                 _source.Optional = false;
                 _source.OnLoadException = context => context.Ignore = false;
                 _consulConfigClientMock
-                    .Setup(ccc => ccc.GetConfig("path/test", default(CancellationToken)))
+                    .Setup(ccc => ccc.GetConfig("path/test", It.IsAny<CancellationToken>()))
                     .ReturnsAsync(new QueryResult<KVPair[]> { StatusCode = HttpStatusCode.NotFound });
 
                 Action loading = _consulConfigProvider.Invoking(ccp => ccp.Load());
@@ -275,7 +275,7 @@ namespace Winton.Extensions.Configuration.Consul
             {
                 _source.Optional = false;
                 _consulConfigClientMock
-                    .SetupSequence(ccc => ccc.GetConfig("Test", default(CancellationToken)))
+                    .SetupSequence(ccc => ccc.GetConfig("Test", It.IsAny<CancellationToken>()))
                     .ReturnsAsync(
                         new QueryResult<KVPair[]>
                         {
@@ -304,7 +304,7 @@ namespace Winton.Extensions.Configuration.Consul
             {
                 _source.Optional = optional;
                 _consulConfigClientMock
-                    .Setup(ccc => ccc.GetConfig("Test", default(CancellationToken)))
+                    .Setup(ccc => ccc.GetConfig("Test", It.IsAny<CancellationToken>()))
                     .ReturnsAsync(new QueryResult<KVPair[]> { StatusCode = HttpStatusCode.NotFound });
 
                 Action reloading = _firstChangeToken.Invoking(ct => ct.OnReload());
@@ -315,13 +315,13 @@ namespace Winton.Extensions.Configuration.Consul
             private void ShouldReloadConfigIfReloadOnChangeAndDataInConsulHasChanged()
             {
                 _consulConfigClientMock
-                    .Setup(ccc => ccc.GetConfig("Test", default(CancellationToken)))
+                    .Setup(ccc => ccc.GetConfig("Test", It.IsAny<CancellationToken>()))
                     .ReturnsAsync(new QueryResult<KVPair[]> { StatusCode = HttpStatusCode.OK });
 
                 _firstChangeToken.OnReload();
 
                 Action verifying = () => _consulConfigClientMock
-                    .Verify(ccc => ccc.GetConfig("Test", default(CancellationToken)), Times.Once);
+                    .Verify(ccc => ccc.GetConfig("Test", It.IsAny<CancellationToken>()), Times.Once);
                 verifying.Should().NotThrow();
             }
 
