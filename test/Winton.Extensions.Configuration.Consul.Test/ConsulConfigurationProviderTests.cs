@@ -313,13 +313,18 @@ namespace Winton.Extensions.Configuration.Consul
             }
 
             [Fact]
-            private void ShouldReloadConfigIfReloadOnChangeAndDataInConsulHasChanged()
+            private async Task ShouldReloadConfigIfReloadOnChangeAndDataInConsulHasChanged()
             {
+                var reloadTcs = new TaskCompletionSource<bool>();
+                var reload = _consulConfigProvider
+                    .GetReloadToken()
+                    .RegisterChangeCallback(_ => reloadTcs.TrySetResult(true), new object());
                 _consulConfigClientMock
                     .Setup(ccc => ccc.GetConfig("Test", It.IsAny<CancellationToken>()))
                     .ReturnsAsync(new QueryResult<KVPair[]> { StatusCode = HttpStatusCode.OK });
 
                 _firstPollTask.SetResult(true);
+                await reloadTcs.Task;
 
                 Action verifying = () => _consulConfigClientMock
                     .Verify(ccc => ccc.GetConfig("Test", It.IsAny<CancellationToken>()), Times.AtLeastOnce);
