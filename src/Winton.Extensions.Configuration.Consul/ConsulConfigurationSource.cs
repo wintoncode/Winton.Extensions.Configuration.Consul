@@ -44,10 +44,12 @@ namespace Winton.Extensions.Configuration.Consul
 
         public bool ReloadOnChange { get; set; } = false;
 
+        public TimeSpan PollWaitTime { get; set; } = TimeSpan.FromMinutes(1);
+
         public IConfigurationProvider Build(IConfigurationBuilder builder)
         {
             var consulClientFactory = new ConsulClientFactory(this);
-            var consulConfigClient = new ConsulConfigurationClient(consulClientFactory);
+            var consulConfigClient = new ConsulConfigurationClient(consulClientFactory, PollWaitTime);
             return new ConsulConfigurationProvider(this, consulConfigClient);
         }
     }

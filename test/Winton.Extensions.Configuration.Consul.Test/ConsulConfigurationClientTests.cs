@@ -27,7 +27,8 @@ namespace Winton.Extensions.Configuration.Consul
             var consulClientFactoryMock = new Mock<IConsulClientFactory>(MockBehavior.Strict);
             consulClientFactoryMock.Setup(ccf => ccf.Create()).Returns(consulClientMock.Object);
 
-            _consulConfigurationClient = new ConsulConfigurationClient(consulClientFactoryMock.Object);
+            _consulConfigurationClient = new ConsulConfigurationClient(
+                consulClientFactoryMock.Object, TimeSpan.FromMinutes(2));
         }
 
         public sealed class GetConfig : ConsulConfigurationClientTests

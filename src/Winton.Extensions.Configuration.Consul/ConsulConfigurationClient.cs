@@ -14,13 +14,15 @@ namespace Winton.Extensions.Configuration.Consul
     internal sealed class ConsulConfigurationClient : IConsulConfigurationClient
     {
         private readonly IConsulClientFactory _consulClientFactory;
+        private readonly TimeSpan _pollWaitTime;
         private readonly object _lastIndexLock = new object();
 
         private ulong _lastIndex;
 
-        public ConsulConfigurationClient(IConsulClientFactory consulClientFactory)
+        public ConsulConfigurationClient(IConsulClientFactory consulClientFactory, TimeSpan pollWaitTime)
         {
             _consulClientFactory = consulClientFactory;
+            _pollWaitTime = pollWaitTime;
         }
 
         public async Task<QueryResult<KVPair[]>> GetConfig(string key, CancellationToken cancellationToken)
@@ -87,10 +89,10 @@ namespace Winton.Extensions.Configuration.Consul
 
         private async Task<bool> HasValueChanged(string key, CancellationToken cancellationToken)
         {
-            QueryOptions queryOptions;
+            QueryOptions queryOptions = new QueryOptions { WaitTime = _pollWaitTime };
             lock (_lastIndexLock)
             {
-                queryOptions = new QueryOptions { WaitIndex = _lastIndex };
+                queryOptions.WaitIndex = _lastIndex;
             }
 
             QueryResult<KVPair[]> result = await GetKvPairs(key, cancellationToken, queryOptions).ConfigureAwait(false);
