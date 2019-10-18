@@ -42,9 +42,9 @@ namespace Winton.Extensions.Configuration.Consul
         ///     A cancellation token that can be used to cancel the operation.
         /// </param>
         /// <returns>
-        ///     An <see cref="IChangeToken" /> that will indicated when changes have occured.
+        ///     A <see cref="Task" /> that completes when the key is modified.
         /// </returns>
-        IChangeToken Watch(
+        Task<bool> PollForChanges(
             string key,
             Func<ConsulWatchExceptionContext, TimeSpan> onException,
             CancellationToken cancellationToken);

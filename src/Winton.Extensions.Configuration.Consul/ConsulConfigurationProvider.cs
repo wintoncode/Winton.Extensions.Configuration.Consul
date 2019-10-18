@@ -17,7 +17,7 @@ namespace Winton.Extensions.Configuration.Consul
         private readonly IConsulConfigurationClient _consulConfigClient;
         private readonly IConsulConfigurationSource _source;
         private readonly CancellationTokenSource _cancellationTokenSource;
-        private readonly IDisposable _changeTokenRegistration;
+        private readonly Task _pollTask;
 
         public ConsulConfigurationProvider(
             IConsulConfigurationSource source,
@@ -34,33 +34,38 @@ namespace Winton.Extensions.Configuration.Consul
 
             if (source.ReloadOnChange)
             {
-                _changeTokenRegistration = ChangeToken.OnChange(
-                    () => _consulConfigClient.Watch(_source.Key, _source.OnWatchException, _cancellationTokenSource.Token),
+                var token = _cancellationTokenSource.Token;
+                _pollTask = Task.Run(
                     async () =>
                     {
-                        await DoLoad(true, _cancellationTokenSource.Token).ConfigureAwait(false);
-                        OnReload();
-                    });
+                        while (!token.IsCancellationRequested)
+                        {
+                            await _consulConfigClient.PollForChanges(_source.Key, _source.OnWatchException, token);
+                            await DoLoad(true).ConfigureAwait(false);
+                            OnReload();
+                        }
+                    }, token);
             }
         }
 
         public override void Load()
         {
-            DoLoad(false, _cancellationTokenSource.Token).GetAwaiter().GetResult();
+            DoLoad(false).GetAwaiter().GetResult();
         }
 
         public void Dispose()
         {
-            _cancellationTokenSource?.Cancel();
-            _changeTokenRegistration?.Dispose();
+            _cancellationTokenSource.Cancel();
+            _pollTask.Wait(500);
+            _cancellationTokenSource.Dispose();
         }
 
-        private async Task DoLoad(bool reloading, CancellationToken token)
+        private async Task DoLoad(bool reloading)
         {
             try
             {
                 QueryResult<KVPair[]> result = await _consulConfigClient
-                    .GetConfig(_source.Key, token)
+                    .GetConfig(_source.Key, _cancellationTokenSource.Token)
                     .ConfigureAwait(false);
                 if (!result.HasValue() && !_source.Optional)
                 {

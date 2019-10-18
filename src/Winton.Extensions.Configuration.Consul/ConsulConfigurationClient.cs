@@ -17,7 +17,6 @@ namespace Winton.Extensions.Configuration.Consul
         private readonly object _lastIndexLock = new object();
 
         private ulong _lastIndex;
-        private ConfigurationReloadToken _reloadToken = new ConfigurationReloadToken();
 
         public ConsulConfigurationClient(IConsulClientFactory consulClientFactory)
         {
@@ -31,13 +30,34 @@ namespace Winton.Extensions.Configuration.Consul
             return result;
         }
 
-        public IChangeToken Watch(
+        public async Task<bool> PollForChanges(
             string key,
             Func<ConsulWatchExceptionContext, TimeSpan> onException,
             CancellationToken cancellationToken)
         {
-            Task.Run(() => PollForChanges(key, onException, cancellationToken), cancellationToken);
-            return _reloadToken;
+            var consecutiveFailureCount = 0;
+            while (!cancellationToken.IsCancellationRequested)
+            {
+                try
+                {
+                    if (await HasValueChanged(key, cancellationToken).ConfigureAwait(false))
+                    {
+                        return true;
+                    }
+
+                    consecutiveFailureCount = 0;
+                }
+                catch (Exception exception)
+                {
+                    TimeSpan wait =
+                        onException?.Invoke(
+                            new ConsulWatchExceptionContext(cancellationToken, exception, ++consecutiveFailureCount)) ??
+                        TimeSpan.FromSeconds(5);
+                    await Task.Delay(wait, cancellationToken);
+                }
+            }
+
+            return false;
         }
 
         private async Task<QueryResult<KVPair[]>> GetKvPairs(
@@ -75,38 +95,6 @@ namespace Winton.Extensions.Configuration.Consul
 
             QueryResult<KVPair[]> result = await GetKvPairs(key, cancellationToken, queryOptions).ConfigureAwait(false);
             return result != null && UpdateLastIndex(result);
-        }
-
-        private async Task PollForChanges(
-            string key,
-            Func<ConsulWatchExceptionContext, TimeSpan> onException,
-            CancellationToken cancellationToken)
-        {
-            var consecutiveFailureCount = 0;
-            while (!cancellationToken.IsCancellationRequested)
-            {
-                try
-                {
-                    if (await HasValueChanged(key, cancellationToken).ConfigureAwait(false))
-                    {
-                        ConfigurationReloadToken previousToken = Interlocked.Exchange(
-                            ref _reloadToken,
-                            new ConfigurationReloadToken());
-                        previousToken.OnReload();
-                        return;
-                    }
-
-                    consecutiveFailureCount = 0;
-                }
-                catch (Exception exception)
-                {
-                    TimeSpan wait =
-                        onException?.Invoke(
-                            new ConsulWatchExceptionContext(cancellationToken, exception, ++consecutiveFailureCount)) ??
-                        TimeSpan.FromSeconds(5);
-                    await Task.Delay(wait, cancellationToken);
-                }
-            }
         }
 
         private bool UpdateLastIndex(QueryResult queryResult)

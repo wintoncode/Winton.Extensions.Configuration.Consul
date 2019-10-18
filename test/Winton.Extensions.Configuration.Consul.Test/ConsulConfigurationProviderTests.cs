@@ -4,6 +4,7 @@ using System.IO;
 using System.Linq;
 using System.Net;
 using System.Threading;
+using System.Threading.Tasks;
 using Consul;
 using FluentAssertions;
 using Microsoft.Extensions.Configuration;
@@ -244,7 +245,7 @@ namespace Winton.Extensions.Configuration.Consul
 
         public sealed class Reload : ConsulConfigurationProviderTests
         {
-            private readonly ConfigurationReloadToken _firstChangeToken;
+            private readonly TaskCompletionSource<bool> _firstPollTask;
             private readonly IConsulConfigurationSource _source;
 
             public Reload()
@@ -254,16 +255,16 @@ namespace Winton.Extensions.Configuration.Consul
                     Parser = _configParserMock.Object,
                     ReloadOnChange = true
                 };
-                _firstChangeToken = new ConfigurationReloadToken();
+                _firstPollTask = new TaskCompletionSource<bool>();
                 _consulConfigClientMock
                     .SetupSequence(
                         ccc =>
-                            ccc.Watch(
+                            ccc.PollForChanges(
                                 "Test",
                                 It.IsAny<Func<ConsulWatchExceptionContext, TimeSpan>>(),
                                 It.IsAny<CancellationToken>()))
-                    .Returns(_firstChangeToken)
-                    .Returns(new ConfigurationReloadToken());
+                    .Returns(_firstPollTask.Task)
+                    .Returns(Task.FromResult(false));
 
                 _consulConfigProvider = new ConsulConfigurationProvider(
                     _source,
@@ -292,7 +293,7 @@ namespace Winton.Extensions.Configuration.Consul
 
                 _consulConfigProvider.Load();
 
-                _firstChangeToken.OnReload();
+                _firstPollTask.SetResult(true);
 
                 _consulConfigProvider.TryGet("Key", out string _).Should().BeTrue();
             }
@@ -307,7 +308,7 @@ namespace Winton.Extensions.Configuration.Consul
                     .Setup(ccc => ccc.GetConfig("Test", It.IsAny<CancellationToken>()))
                     .ReturnsAsync(new QueryResult<KVPair[]> { StatusCode = HttpStatusCode.NotFound });
 
-                Action reloading = _firstChangeToken.Invoking(ct => ct.OnReload());
+                Action reloading = _firstPollTask.Invoking(ct => ct.SetResult(true));
                 reloading.Should().NotThrow();
             }
 
@@ -318,10 +319,10 @@ namespace Winton.Extensions.Configuration.Consul
                     .Setup(ccc => ccc.GetConfig("Test", It.IsAny<CancellationToken>()))
                     .ReturnsAsync(new QueryResult<KVPair[]> { StatusCode = HttpStatusCode.OK });
 
-                _firstChangeToken.OnReload();
+                _firstPollTask.SetResult(true);
 
                 Action verifying = () => _consulConfigClientMock
-                    .Verify(ccc => ccc.GetConfig("Test", It.IsAny<CancellationToken>()), Times.Once);
+                    .Verify(ccc => ccc.GetConfig("Test", It.IsAny<CancellationToken>()), Times.AtLeastOnce);
                 verifying.Should().NotThrow();
             }
 
@@ -331,7 +332,7 @@ namespace Winton.Extensions.Configuration.Consul
                 Action verifying =
                     () =>
                         _consulConfigClientMock.Verify(
-                            ccs => ccs.Watch("Test", _source.OnWatchException, It.IsAny<CancellationToken>()),
+                            ccs => ccs.PollForChanges("Test", _source.OnWatchException, It.IsAny<CancellationToken>()),
                             Times.Once);
                 verifying.Should().NotThrow();
             }
