@@ -34,17 +34,7 @@ namespace Winton.Extensions.Configuration.Consul
 
             if (source.ReloadOnChange)
             {
-                var token = _cancellationTokenSource.Token;
-                _pollTask = Task.Run(
-                    async () =>
-                    {
-                        while (!token.IsCancellationRequested)
-                        {
-                            await _consulConfigClient.PollForChanges(_source.Key, _source.OnWatchException, token);
-                            await DoLoad(true).ConfigureAwait(false);
-                            OnReload();
-                        }
-                    }, token);
+                _pollTask = PollForChanges();
             }
         }
 
@@ -58,6 +48,17 @@ namespace Winton.Extensions.Configuration.Consul
             _cancellationTokenSource.Cancel();
             _pollTask.Wait(500);
             _cancellationTokenSource.Dispose();
+        }
+
+        private async Task PollForChanges()
+        {
+            var token = _cancellationTokenSource.Token;
+            while (!token.IsCancellationRequested)
+            {
+                await _consulConfigClient.PollForChanges(_source.Key, _source.OnWatchException, token).ConfigureAwait(false);
+                await DoLoad(true).ConfigureAwait(false);
+                OnReload();
+            }
         }
 
         private async Task DoLoad(bool reloading)
