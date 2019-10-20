@@ -83,5 +83,10 @@ namespace Winton.Extensions.Configuration.Consul
         ///     Gets or sets a value indicating whether the source will be reloaded if the data in consul changes.
         /// </summary>
         bool ReloadOnChange { get; set; }
+
+        /// <summary>
+        ///     Gets or sets the maxium amount of time to wait for changes to a key if <see cref="ReloadOnChange" /> is set.
+        /// </summary>
+        TimeSpan PollWaitTime { get; set; }
     }
 }

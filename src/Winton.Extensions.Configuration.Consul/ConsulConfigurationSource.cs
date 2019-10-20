@@ -44,7 +44,7 @@ namespace Winton.Extensions.Configuration.Consul
 
         public bool ReloadOnChange { get; set; } = false;
 
-        public TimeSpan PollWaitTime { get; set; } = TimeSpan.FromMinutes(1);
+        public TimeSpan PollWaitTime { get; set; } = TimeSpan.FromMinutes(5);
 
         public IConfigurationProvider Build(IConfigurationBuilder builder)
         {
