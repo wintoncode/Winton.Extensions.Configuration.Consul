@@ -3,7 +3,6 @@
 
 using System;
 using System.Net.Http;
-using System.Threading;
 using Consul;
 using Microsoft.Extensions.Configuration;
 using Winton.Extensions.Configuration.Consul.Parsers;
@@ -21,6 +20,7 @@ namespace Winton.Extensions.Configuration.Consul
             }
 
             Key = key;
+            KeyToRemove = Key;
             Parser = new JsonConfigurationParser();
         }
 
@@ -49,8 +49,7 @@ namespace Winton.Extensions.Configuration.Consul
         public IConfigurationProvider Build(IConfigurationBuilder builder)
         {
             var consulClientFactory = new ConsulClientFactory(this);
-            var consulConfigClient = new ConsulConfigurationClient(consulClientFactory, PollWaitTime);
-            return new ConsulConfigurationProvider(this, consulConfigClient);
+            return new ConsulConfigurationProvider(this, consulClientFactory);
         }
     }
 }

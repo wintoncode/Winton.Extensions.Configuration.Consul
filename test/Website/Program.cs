@@ -26,8 +26,8 @@ namespace Winton.Extensions.Configuration.Consul.Website
                                     options.ConsulConfigurationOptions =
                                         cco => { cco.Address = new Uri("http://consul:8500"); };
                                     options.Optional = true;
+                                    options.PollWaitTime = TimeSpan.FromSeconds(5);
                                     options.ReloadOnChange = true;
-                                    options.OnLoadException = context => { context.Ignore = true; };
                                 })
                             .AddEnvironmentVariables();
                     });

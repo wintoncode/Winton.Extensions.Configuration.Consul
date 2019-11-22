@@ -47,7 +47,7 @@ namespace Winton.Extensions.Configuration.Consul
         ///     Gets the portion of the Consul key to remove from the configuration keys.
         ///     By default, when the configuration is parsed, the keys are created by removing the root key in Consul
         ///     where the configuration is located.
-        ///     If this property is set then this string is removed instead of the Consul root key.
+        ///     Defaults to <see cref="Key"/>.
         /// </summary>
         string KeyToRemove { get; }
 
@@ -85,7 +85,8 @@ namespace Winton.Extensions.Configuration.Consul
         bool ReloadOnChange { get; set; }
 
         /// <summary>
-        ///     Gets or sets the maxium amount of time to wait for changes to a key if <see cref="ReloadOnChange" /> is set.
+        ///     Gets or sets the maximum amount of time to wait for changes to a key if <see cref="ReloadOnChange" /> is set.
+        ///     It also controls the frequency at which it will poll for missing keys.
         /// </summary>
         TimeSpan PollWaitTime { get; set; }
     }
