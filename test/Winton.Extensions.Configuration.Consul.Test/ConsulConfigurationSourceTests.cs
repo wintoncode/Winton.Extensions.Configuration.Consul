@@ -27,6 +27,14 @@ namespace Winton.Extensions.Configuration.Consul
             }
 
             [Fact]
+            private void ShouldSetKeyToRemoveToKeyByDefault()
+            {
+                var source = new ConsulConfigurationSource("Key");
+
+                source.KeyToRemove.Should().Be("Key");
+            }
+
+            [Fact]
             private void ShouldSetOptionalToFalseByDefault()
             {
                 var source = new ConsulConfigurationSource("Key");
