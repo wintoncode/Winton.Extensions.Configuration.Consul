@@ -86,7 +86,6 @@ namespace Winton.Extensions.Configuration.Consul
 
         /// <summary>
         ///     Gets or sets the maximum amount of time to wait for changes to a key if <see cref="ReloadOnChange" /> is set.
-        ///     It also controls the frequency at which it will poll for missing keys.
         /// </summary>
         TimeSpan PollWaitTime { get; set; }
     }

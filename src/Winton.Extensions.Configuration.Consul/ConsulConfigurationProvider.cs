@@ -11,6 +11,15 @@ using Winton.Extensions.Configuration.Consul.Extensions;
 
 namespace Winton.Extensions.Configuration.Consul
 {
+    /// <summary>
+    ///     Each instance loads configuration for the key in Consul that is specified in
+    ///     the contained <see cref="IConsulConfigurationSource"/>.
+    ///     It has the ability to automatically reload the config if it changes in Consul.
+    /// </summary>
+    /// <remarks>
+    ///     Each instance maintains its own <c>lastIndex</c> and uses this to detect changes.
+    ///     Each instance ensures calls to Consul are serialised, to avoid concurrent access to <c>lastIndex</c>.
+    /// </remarks>
     internal sealed class ConsulConfigurationProvider : ConfigurationProvider, IDisposable
     {
         private readonly CancellationTokenSource _cancellationTokenSource;
@@ -50,7 +59,7 @@ namespace Winton.Extensions.Configuration.Consul
 
             DoLoad().GetAwaiter().GetResult();
 
-            // Polling starts after the initial load to ensure no concurrent access to the key from this client
+            // Polling starts after the initial load to ensure no concurrent access to the key from this instance
             if (_source.ReloadOnChange)
             {
                 _pollTask = Task.Run(PollingLoop);
