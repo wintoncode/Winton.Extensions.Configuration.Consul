@@ -7,7 +7,6 @@ using System.Threading;
 using Consul;
 using Microsoft.Extensions.Configuration;
 using Winton.Extensions.Configuration.Consul.Parsers;
-using Winton.Extensions.Configuration.Consul.Parsers.Json;
 
 namespace Winton.Extensions.Configuration.Consul
 {
