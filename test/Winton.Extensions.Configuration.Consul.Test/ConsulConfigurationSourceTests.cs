@@ -13,32 +13,31 @@ namespace Winton.Extensions.Configuration.Consul
             [Fact]
             private void ShouldHaveJsonConfgurationParserByDefault()
             {
-                var source = new ConsulConfigurationSource("Key", default(CancellationToken));
+                var source = new ConsulConfigurationSource("Key");
 
                 source.Parser.Should().BeOfType<JsonConfigurationParser>();
             }
 
             [Fact]
-            private void ShouldSetCancellationTokenInConstructor()
-            {
-                var cancellationToken = new CancellationToken(false);
-                var source = new ConsulConfigurationSource("Key", cancellationToken);
-
-                source.CancellationToken.Should().Be(cancellationToken);
-            }
-
-            [Fact]
             private void ShouldSetKey()
             {
-                var source = new ConsulConfigurationSource("Key", default(CancellationToken));
+                var source = new ConsulConfigurationSource("Key");
 
                 source.Key.Should().Be("Key");
             }
 
             [Fact]
+            private void ShouldSetKeyToRemoveToKeyByDefault()
+            {
+                var source = new ConsulConfigurationSource("Key");
+
+                source.KeyToRemove.Should().Be("Key");
+            }
+
+            [Fact]
             private void ShouldSetOptionalToFalseByDefault()
             {
-                var source = new ConsulConfigurationSource("Key", default(CancellationToken));
+                var source = new ConsulConfigurationSource("Key");
 
                 source.Optional.Should().BeFalse();
             }
@@ -46,7 +45,7 @@ namespace Winton.Extensions.Configuration.Consul
             [Fact]
             private void ShouldSetReloadOnChangeToFalseByDefault()
             {
-                var source = new ConsulConfigurationSource("Key", default(CancellationToken));
+                var source = new ConsulConfigurationSource("Key");
 
                 source.ReloadOnChange.Should().BeFalse();
             }
@@ -58,7 +57,7 @@ namespace Winton.Extensions.Configuration.Consul
             private void ShouldThrowIfKeyIsInvalid(string key)
             {
                 // ReSharper disable once ObjectCreationAsStatement
-                Action constructing = () => new ConsulConfigurationSource(key, default(CancellationToken));
+                Action constructing = () => new ConsulConfigurationSource(key);
 
                 constructing.Should().Throw<ArgumentNullException>().And.Message.Should().Contain("key");
             }

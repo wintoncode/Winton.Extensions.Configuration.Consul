@@ -2,74 +2,86 @@
 // Licensed under the Apache License, Version 2.0. See LICENCE in the project root for license information.
 
 using System;
-using System.Linq;
+using System.Net;
+using System.Threading;
 using System.Threading.Tasks;
 using Consul;
 using Microsoft.Extensions.Configuration;
-using Microsoft.Extensions.Primitives;
 using Winton.Extensions.Configuration.Consul.Extensions;
 
 namespace Winton.Extensions.Configuration.Consul
 {
-    internal sealed class ConsulConfigurationProvider : ConfigurationProvider
+    /// <summary>
+    ///     Each instance loads configuration for the key in Consul that is specified in
+    ///     the contained <see cref="IConsulConfigurationSource"/>.
+    ///     It has the ability to automatically reload the config if it changes in Consul.
+    /// </summary>
+    /// <remarks>
+    ///     Each instance maintains its own <c>lastIndex</c> and uses this to detect changes.
+    ///     Each instance ensures calls to Consul are serialised, to avoid concurrent access to <c>lastIndex</c>.
+    /// </remarks>
+    internal sealed class ConsulConfigurationProvider : ConfigurationProvider, IDisposable
     {
-        private readonly IConsulConfigurationClient _consulConfigClient;
+        private readonly CancellationTokenSource _cancellationTokenSource;
+        private readonly IConsulClientFactory _consulClientFactory;
         private readonly IConsulConfigurationSource _source;
+        private ulong _lastIndex;
+        private Task _pollTask;
 
         public ConsulConfigurationProvider(
             IConsulConfigurationSource source,
-            IConsulConfigurationClient consulConfigClient)
+            IConsulClientFactory consulClientFactory)
         {
             if (source.Parser == null)
             {
                 throw new ArgumentNullException(nameof(source.Parser));
             }
 
-            _consulConfigClient = consulConfigClient;
             _source = source;
+            _consulClientFactory = consulClientFactory;
+            _cancellationTokenSource = new CancellationTokenSource();
+        }
 
-            if (source.ReloadOnChange)
-            {
-                ChangeToken.OnChange(
-                    () => _consulConfigClient.Watch(_source.Key, _source.OnWatchException, _source.CancellationToken),
-                    async () =>
-                    {
-                        await DoLoad(true).ConfigureAwait(false);
-                        OnReload();
-                    });
-            }
+        public void Dispose()
+        {
+            _cancellationTokenSource.Cancel();
+            _pollTask?.Wait(500);
+            _cancellationTokenSource.Dispose();
         }
 
         public override void Load()
         {
-            DoLoad(false).GetAwaiter().GetResult();
+            // If polling has already begun then calling load is pointless
+            if (_pollTask != null)
+            {
+                return;
+            }
+
+            DoLoad().GetAwaiter().GetResult();
+
+            // Polling starts after the initial load to ensure no concurrent access to the key from this instance
+            if (_source.ReloadOnChange)
+            {
+                _pollTask = Task.Run(PollingLoop);
+            }
         }
 
-        private async Task DoLoad(bool reloading)
+        private async Task DoLoad()
         {
             try
             {
-                QueryResult<KVPair[]> result = await _consulConfigClient
-                    .GetConfig(_source.Key, _source.CancellationToken)
-                    .ConfigureAwait(false);
-                if (!result.HasValue() && !_source.Optional)
-                {
-                    if (!reloading)
-                    {
-                        throw new Exception(
-                            $"The configuration for key {_source.Key} was not found and is not optional.");
-                    }
+                QueryResult<KVPair[]> result = await GetKvPairs(false).ConfigureAwait(false);
 
-                    // Don't overwrite mandatory config with empty data if not found when reloading
-                    return;
+                if (result.HasValue())
+                {
+                    SetData(result);
+                }
+                else if (!_source.Optional)
+                {
+                    throw new Exception($"The configuration for key {_source.Key} was not found and is not optional.");
                 }
 
-                string keyToRemove = _source.KeyToRemove ?? _source.Key;
-
-                Data = (result?.Response ?? new KVPair[0])
-                    .Where(kvp => kvp.HasValue())
-                    .SelectMany(kvp => kvp.ConvertToConfig(keyToRemove, _source.Parser))
-                    .ToDictionary(kvp => kvp.Key, kvp => kvp.Value, StringComparer.OrdinalIgnoreCase);
+                SetLastIndex(result);
             }
             catch (Exception exception)
             {
@@ -80,6 +92,77 @@ namespace Winton.Extensions.Configuration.Consul
                     throw;
                 }
             }
+        }
+
+        private async Task<QueryResult<KVPair[]>> GetKvPairs(bool waitForChange)
+        {
+            using (IConsulClient consulClient = _consulClientFactory.Create())
+            {
+                var queryOptions = new QueryOptions
+                {
+                    WaitTime = _source.PollWaitTime,
+                    WaitIndex = waitForChange ? _lastIndex : 0
+                };
+
+                QueryResult<KVPair[]> result =
+                    await consulClient
+                        .KV
+                        .List(_source.Key, queryOptions, _cancellationTokenSource.Token)
+                        .ConfigureAwait(false);
+
+                switch (result.StatusCode)
+                {
+                    case HttpStatusCode.OK:
+                    case HttpStatusCode.NotFound:
+                        return result;
+                    default:
+                        throw new Exception(
+                            $"Error loading configuration from consul. Status code: {result.StatusCode}.");
+                }
+            }
+        }
+
+        private async Task PollingLoop()
+        {
+            var consecutiveFailureCount = 0;
+            while (!_cancellationTokenSource.Token.IsCancellationRequested)
+            {
+                try
+                {
+                    QueryResult<KVPair[]> result = await GetKvPairs(true).ConfigureAwait(false);
+
+                    if (result.HasValue() && result.LastIndex > _lastIndex)
+                    {
+                        SetData(result);
+                        OnReload();
+                    }
+
+                    SetLastIndex(result);
+                    consecutiveFailureCount = 0;
+                }
+                catch (Exception exception)
+                {
+                    TimeSpan wait =
+                        _source.OnWatchException?.Invoke(
+                            new ConsulWatchExceptionContext(exception, ++consecutiveFailureCount, _source)) ??
+                        TimeSpan.FromSeconds(5);
+                    await Task.Delay(wait, _cancellationTokenSource.Token);
+                }
+            }
+        }
+
+        private void SetData(QueryResult<KVPair[]> result)
+        {
+            Data = result.ToConfigDictionary(_source.KeyToRemove, _source.Parser);
+        }
+
+        private void SetLastIndex(QueryResult result)
+        {
+            _lastIndex = result.LastIndex == 0
+                ? 1
+                : result.LastIndex < _lastIndex
+                    ? 0
+                    : result.LastIndex;
         }
     }
 }

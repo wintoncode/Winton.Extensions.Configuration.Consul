@@ -21,14 +21,13 @@ namespace Winton.Extensions.Configuration.Consul.Website
                         builder
                             .AddConsul(
                                 "appsettings.json",
-                                CancellationTokenSource.Token,
                                 options =>
                                 {
                                     options.ConsulConfigurationOptions =
                                         cco => { cco.Address = new Uri("http://consul:8500"); };
                                     options.Optional = true;
+                                    options.PollWaitTime = TimeSpan.FromSeconds(5);
                                     options.ReloadOnChange = true;
-                                    options.OnLoadException = context => { context.Ignore = true; };
                                 })
                             .AddEnvironmentVariables();
                     });
@@ -37,8 +36,6 @@ namespace Winton.Extensions.Configuration.Consul.Website
         public static void Main(string[] args)
         {
             CreateHostBuilder(args).Build().Run();
-            CancellationTokenSource.Cancel();
-            CancellationTokenSource.Dispose();
         }
     }
 }

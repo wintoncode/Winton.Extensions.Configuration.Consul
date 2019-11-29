@@ -18,13 +18,6 @@ namespace Winton.Extensions.Configuration.Consul
     public interface IConsulConfigurationSource : IConfigurationSource
     {
         /// <summary>
-        ///     Gets a <see cref="CancellationToken" /> that can be used to cancel any consul requests
-        ///     either loading or watching via long polling.
-        ///     It is recommended that this is cancelled during shut down.
-        /// </summary>
-        CancellationToken CancellationToken { get; }
-
-        /// <summary>
         ///     Gets or sets an <see cref="Action" /> to be applied to the <see cref="ConsulClientConfiguration" />
         ///     during construction of the <see cref="IConsulClient" />.
         ///     Allows the default config options for Consul to be overriden.
@@ -54,7 +47,7 @@ namespace Winton.Extensions.Configuration.Consul
         ///     Gets the portion of the Consul key to remove from the configuration keys.
         ///     By default, when the configuration is parsed, the keys are created by removing the root key in Consul
         ///     where the configuration is located.
-        ///     If this property is set then this string is removed instead of the Consul root key.
+        ///     Defaults to <see cref="Key"/>.
         /// </summary>
         string KeyToRemove { get; }
 
@@ -90,5 +83,10 @@ namespace Winton.Extensions.Configuration.Consul
         ///     Gets or sets a value indicating whether the source will be reloaded if the data in consul changes.
         /// </summary>
         bool ReloadOnChange { get; set; }
+
+        /// <summary>
+        ///     Gets or sets the maximum amount of time to wait for changes to a key if <see cref="ReloadOnChange" /> is set.
+        /// </summary>
+        TimeSpan PollWaitTime { get; set; }
     }
 }

@@ -19,17 +19,12 @@ namespace Winton.Extensions.Configuration.Consul
         /// </summary>
         /// <param name="builder">The builder to add consul to.</param>
         /// <param name="key">The key in consul where the configuration is located.</param>
-        /// <param name="cancellationToken">
-        ///     The <see cref="CancellationToken" /> used to cancel any open Consul connections or
-        ///     watchers.
-        /// </param>
         /// <returns>The builder.</returns>
         public static IConfigurationBuilder AddConsul(
             this IConfigurationBuilder builder,
-            string key,
-            CancellationToken cancellationToken)
+            string key)
         {
-            return builder.AddConsul(key, cancellationToken, options => { });
+            return builder.AddConsul(key, options => { });
         }
 
         /// <summary>
@@ -38,19 +33,14 @@ namespace Winton.Extensions.Configuration.Consul
         /// </summary>
         /// <param name="builder">The builder to add consul to.</param>
         /// <param name="key">The key in consul where the configuration is located.</param>
-        /// <param name="cancellationToken">
-        ///     The <see cref="CancellationToken" /> used to cancel any open Consul connections or
-        ///     watchers.
-        /// </param>
         /// <param name="options">An action used to configure the options of the <see cref="IConsulConfigurationSource" />.</param>
         /// <returns>The builder.</returns>
         public static IConfigurationBuilder AddConsul(
             this IConfigurationBuilder builder,
             string key,
-            CancellationToken cancellationToken,
             Action<IConsulConfigurationSource> options)
         {
-            var consulConfigSource = new ConsulConfigurationSource(key, cancellationToken);
+            var consulConfigSource = new ConsulConfigurationSource(key);
             options(consulConfigSource);
             return builder.Add(consulConfigSource);
         }

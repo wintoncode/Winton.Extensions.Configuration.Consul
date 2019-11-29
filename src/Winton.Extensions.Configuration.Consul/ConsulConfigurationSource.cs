@@ -3,7 +3,6 @@
 
 using System;
 using System.Net.Http;
-using System.Threading;
 using Consul;
 using Microsoft.Extensions.Configuration;
 using Winton.Extensions.Configuration.Consul.Parsers;
@@ -13,7 +12,7 @@ namespace Winton.Extensions.Configuration.Consul
 {
     internal sealed class ConsulConfigurationSource : IConsulConfigurationSource
     {
-        public ConsulConfigurationSource(string key, CancellationToken cancellationToken)
+        public ConsulConfigurationSource(string key)
         {
             if (string.IsNullOrWhiteSpace(key))
             {
@@ -21,11 +20,9 @@ namespace Winton.Extensions.Configuration.Consul
             }
 
             Key = key;
-            CancellationToken = cancellationToken;
+            KeyToRemove = Key;
             Parser = new JsonConfigurationParser();
         }
-
-        public CancellationToken CancellationToken { get; }
 
         public Action<ConsulClientConfiguration> ConsulConfigurationOptions { get; set; }
 
@@ -47,11 +44,12 @@ namespace Winton.Extensions.Configuration.Consul
 
         public bool ReloadOnChange { get; set; } = false;
 
+        public TimeSpan PollWaitTime { get; set; } = TimeSpan.FromMinutes(5);
+
         public IConfigurationProvider Build(IConfigurationBuilder builder)
         {
             var consulClientFactory = new ConsulClientFactory(this);
-            var consulConfigClient = new ConsulConfigurationClient(consulClientFactory);
-            return new ConsulConfigurationProvider(this, consulConfigClient);
+            return new ConsulConfigurationProvider(this, consulClientFactory);
         }
     }
 }

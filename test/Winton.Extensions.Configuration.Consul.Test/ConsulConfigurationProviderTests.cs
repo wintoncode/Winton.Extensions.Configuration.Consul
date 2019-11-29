@@ -4,31 +4,52 @@ using System.IO;
 using System.Linq;
 using System.Net;
 using System.Threading;
+using System.Threading.Tasks;
 using Consul;
 using FluentAssertions;
-using Microsoft.Extensions.Configuration;
 using Moq;
 using Winton.Extensions.Configuration.Consul.Parsers;
 using Xunit;
+using Range = Moq.Range;
 
 namespace Winton.Extensions.Configuration.Consul
 {
     public class ConsulConfigurationProviderTests
     {
-        private readonly Mock<IConfigurationParser> _configParserMock =
-            new Mock<IConfigurationParser>(MockBehavior.Strict);
+        private readonly Mock<IKVEndpoint> _kvEndpoint;
+        private readonly Mock<IConfigurationParser> _parser;
+        private readonly ConsulConfigurationProvider _provider;
+        private readonly IConsulConfigurationSource _source;
 
-        private readonly Mock<IConsulConfigurationClient> _consulConfigClientMock =
-            new Mock<IConsulConfigurationClient>(MockBehavior.Strict);
-
-        private ConsulConfigurationProvider _consulConfigProvider;
+        public ConsulConfigurationProviderTests()
+        {
+            _kvEndpoint = new Mock<IKVEndpoint>(MockBehavior.Strict);
+            var consulClient = new Mock<IConsulClient>(MockBehavior.Strict);
+            consulClient
+                .Setup(cc => cc.KV)
+                .Returns(_kvEndpoint.Object);
+            consulClient
+                .Setup(cc => cc.Dispose());
+            var consulClientFactory = new Mock<IConsulClientFactory>(MockBehavior.Strict);
+            consulClientFactory
+                .Setup(ccf => ccf.Create())
+                .Returns(consulClient.Object);
+            _parser = new Mock<IConfigurationParser>(MockBehavior.Strict);
+            _source = new ConsulConfigurationSource("Test")
+            {
+                Parser = _parser.Object
+            };
+            _provider = new ConsulConfigurationProvider(
+                _source,
+                consulClientFactory.Object);
+        }
 
         public sealed class Constructor : ConsulConfigurationProviderTests
         {
             [Fact]
             public void ShouldThrowIfParserIsNull()
             {
-                var source = new ConsulConfigurationSource("Test", default(CancellationToken))
+                var source = new ConsulConfigurationSource("Test")
                 {
                     Parser = null
                 };
@@ -36,246 +57,318 @@ namespace Winton.Extensions.Configuration.Consul
                 // ReSharper disable once ObjectCreationAsStatement
                 Action constructing =
                     () =>
-                        new ConsulConfigurationProvider(source, _consulConfigClientMock.Object);
+                        new ConsulConfigurationProvider(source, new Mock<IConsulClientFactory>().Object);
 
-                constructing.Should().Throw<ArgumentNullException>()
-                            .And.Message.Should().Contain(nameof(IConsulConfigurationSource.Parser));
+                constructing
+                    .Should()
+                    .Throw<ArgumentNullException>()
+                    .And.Message.Should().Contain(nameof(IConsulConfigurationSource.Parser));
             }
         }
 
-        public sealed class Load : ConsulConfigurationProviderTests
+        public sealed class Dispose : ConsulConfigurationProviderTests
         {
-            private readonly ConsulConfigurationSource _source;
-
-            public Load()
+            [Fact]
+            private async Task ShouldCancelPollingTaskWhenReloading()
             {
-                _source = new ConsulConfigurationSource("path/test", default(CancellationToken))
-                {
-                    Parser = _configParserMock.Object,
-                    ReloadOnChange = false
-                };
+                var expectedKvCalls = 0;
+                var pollingCancelled = new TaskCompletionSource<CancellationToken>();
+                CancellationToken cancellationToken = default;
+                _source.ReloadOnChange = true;
+                _source.Optional = true;
+                _kvEndpoint
+                    .Setup(kv => kv.List("Test", It.IsAny<QueryOptions>(), It.IsAny<CancellationToken>()))
+                    .Callback<string, QueryOptions, CancellationToken>(
+                        (_, __, token) =>
+                        {
+                            if (pollingCancelled.Task.IsCompleted)
+                            {
+                                return;
+                            }
 
-                _consulConfigProvider = new ConsulConfigurationProvider(_source, _consulConfigClientMock.Object);
+                            expectedKvCalls++;
+                            if (cancellationToken == default)
+                            {
+                                cancellationToken = token;
+                            }
+                        })
+                    .Returns(
+                        pollingCancelled.Task.IsCompleted
+                            ? Task.FromCanceled<QueryResult<KVPair[]>>(pollingCancelled.Task.Result)
+                            : Task.FromResult(new QueryResult<KVPair[]> { StatusCode = HttpStatusCode.OK }));
+
+                _provider.Load();
+                cancellationToken.Register(() => pollingCancelled.SetResult(cancellationToken));
+
+                _provider.Dispose();
+
+                await pollingCancelled.Task;
+
+                // It's possible that one additional call to KV List endpoint is made depending on when the loop is interrupted.
+                _kvEndpoint.Verify(
+                    kv => kv.List("Test", It.IsAny<QueryOptions>(), It.IsAny<CancellationToken>()),
+                    Times.Between(expectedKvCalls, expectedKvCalls + 1, Range.Inclusive));
+            }
+        }
+
+        public sealed class DoNotReloadOnChange : ConsulConfigurationProviderTests
+        {
+            public DoNotReloadOnChange()
+            {
+                _source.ReloadOnChange = false;
             }
 
             [Fact]
-            private void ShouldCallSourceOnLoadExceptionActionWhenException()
+            private void ShouldCallLoadExceptionWhenConsulReturnsBadRequest()
             {
                 var calledOnLoadException = false;
-
-                _consulConfigClientMock
-                    .Setup(ccc => ccc.GetConfig("path/test", default(CancellationToken)))
-                    .ThrowsAsync(new Exception());
-                _source.OnLoadException = context =>
+                _source.OnLoadException = ctx =>
                 {
-                    context.Ignore = true;
+                    ctx.Ignore = true;
                     calledOnLoadException = true;
                 };
+                _kvEndpoint
+                    .Setup(kv => kv.List("Test", It.IsAny<QueryOptions>(), It.IsAny<CancellationToken>()))
+                    .ReturnsAsync(
+                        new QueryResult<KVPair[]>
+                        {
+                            StatusCode = HttpStatusCode.BadRequest
+                        });
 
-                _consulConfigProvider.Load();
+                _provider.Load();
 
                 calledOnLoadException.Should().BeTrue();
             }
 
             [Fact]
-            private void ShouldHaveEmptyDataIfConfigDoesNotExistAndIsOptional()
+            private void ShouldCallOnLoadExceptionActionWhenLoadingThrows()
             {
-                _source.Optional = true;
-                _consulConfigClientMock
-                    .Setup(ccc => ccc.GetConfig("path/test", default(CancellationToken)))
-                    .ReturnsAsync(new QueryResult<KVPair[]> { StatusCode = HttpStatusCode.NotFound });
+                var calledOnLoadException = false;
 
-                _consulConfigProvider.Load();
+                _kvEndpoint
+                    .Setup(kv => kv.List("Test", It.IsAny<QueryOptions>(), It.IsAny<CancellationToken>()))
+                    .ThrowsAsync(new Exception());
+                _source.OnLoadException = ctx =>
+                {
+                    ctx.Ignore = true;
+                    calledOnLoadException = true;
+                };
 
-                _consulConfigProvider.GetChildKeys(Enumerable.Empty<string>(), string.Empty).Should().BeEmpty();
+                _provider.Load();
+
+                calledOnLoadException.Should().BeTrue();
             }
 
             [Fact]
-            private void ShouldNotParseIfConfigBytesIsNull()
+            private void ShouldHaveEmptyDataWhenConfigDoesNotExistAndIsOptional()
             {
                 _source.Optional = true;
-                _consulConfigClientMock
-                    .Setup(ccc => ccc.GetConfig("path/test", default(CancellationToken)))
+                _kvEndpoint
+                    .Setup(kv => kv.List("Test", It.IsAny<QueryOptions>(), It.IsAny<CancellationToken>()))
+                    .ReturnsAsync(new QueryResult<KVPair[]> { StatusCode = HttpStatusCode.NotFound });
+
+                _provider.Load();
+
+                _provider.GetChildKeys(Enumerable.Empty<string>(), string.Empty).Should().BeEmpty();
+            }
+
+            [Fact]
+            private void ShouldNotMakeABlockingCall()
+            {
+                var allQueryOptions = new List<QueryOptions>();
+                _parser
+                    .Setup(cp => cp.Parse(It.IsAny<MemoryStream>()))
+                    .Returns(new Dictionary<string, string> { { "Key", "Value" } });
+                _kvEndpoint
+                    .Setup(
+                        kv =>
+                            kv.List(
+                                "Test",
+                                It.IsAny<QueryOptions>(),
+                                It.IsAny<CancellationToken>()))
+                    .Callback<string, QueryOptions, CancellationToken>(
+                        (_, options, __) => allQueryOptions.Add(options))
                     .ReturnsAsync(
                         new QueryResult<KVPair[]>
                         {
+                            LastIndex = 1234,
                             Response = new[]
                             {
-                                new KVPair("path/test") { Value = new List<byte>().ToArray() }
+                                new KVPair("Test") { Value = new List<byte> { 1 }.ToArray() }
                             },
                             StatusCode = HttpStatusCode.OK
                         });
 
-                _consulConfigProvider.Load();
+                _provider.Load();
+                _provider.Load();
 
-                Action verifying = () => _configParserMock.Verify(cp => cp.Parse(It.IsAny<MemoryStream>()), Times.Never);
-                verifying.Should().NotThrow();
+                allQueryOptions
+                    .Should()
+                    .NotBeEmpty()
+                    .And
+                    .AllBeEquivalentTo(new QueryOptions { WaitIndex = 0, WaitTime = _source.PollWaitTime });
             }
 
             [Fact]
             private void ShouldNotThrowExceptionIfOnLoadExceptionIsSetToIgnore()
             {
-                _consulConfigClientMock
-                    .Setup(ccc => ccc.GetConfig("path/test", default(CancellationToken)))
+                _source.OnLoadException = ctx => ctx.Ignore = true;
+                _kvEndpoint
+                    .Setup(kv => kv.List("Test", It.IsAny<QueryOptions>(), It.IsAny<CancellationToken>()))
                     .ThrowsAsync(new Exception("Failed to load from Consul agent"));
-                _source.OnLoadException = exceptionContext => { exceptionContext.Ignore = true; };
 
-                Action loading = () => _consulConfigProvider.Load();
+                Action loading = () => _provider.Load();
+
                 loading.Should().NotThrow();
             }
 
-            [Theory]
-            [InlineData("Key")]
-            [InlineData("KEY")]
-            [InlineData("key")]
-            [InlineData("KeY")]
-            private void ShouldParseLoadedConfigIntoCaseInsensitiveDictionary(string lookupKey)
+            [Fact]
+            private void ShouldReloadWhenNotPolling()
             {
-                _configParserMock
-                    .Setup(cp => cp.Parse(It.IsAny<MemoryStream>()))
-                    .Returns(new Dictionary<string, string> { { "kEy", "Value" } });
-                _consulConfigClientMock
-                    .Setup(ccc => ccc.GetConfig("path/test", default(CancellationToken)))
-                    .ReturnsAsync(
-                        new QueryResult<KVPair[]>
-                        {
-                            Response = new[]
-                            {
-                                new KVPair("path/test") { Value = new List<byte> { 1 }.ToArray() }
-                            },
-                            StatusCode = HttpStatusCode.OK
-                        });
+                _source.Optional = true;
+                _kvEndpoint
+                    .Setup(kv => kv.List("Test", It.IsAny<QueryOptions>(), It.IsAny<CancellationToken>()))
+                    .ReturnsAsync(new QueryResult<KVPair[]> { StatusCode = HttpStatusCode.NotFound });
 
-                _consulConfigProvider.Load();
+                _provider.Load();
+                _provider.Load();
 
-                _consulConfigProvider.TryGet(lookupKey, out string value);
-                value.Should().Be("Value");
+                _kvEndpoint.Verify(
+                    kv => kv.List("Test", It.IsAny<QueryOptions>(), It.IsAny<CancellationToken>()),
+                    Times.Exactly(2));
             }
 
             [Fact]
-            private void ShouldRemoveCustomKeySectionIfSpecified()
+            private void ShouldSetData()
             {
-                _source.KeyToRemove = "path";
-                _configParserMock
+                _parser
                     .Setup(cp => cp.Parse(It.IsAny<MemoryStream>()))
                     .Returns(new Dictionary<string, string> { { "Key", "Value" } });
-                _consulConfigClientMock
-                    .Setup(ccc => ccc.GetConfig("path/test", default(CancellationToken)))
+                _kvEndpoint
+                    .Setup(kv => kv.List("Test", It.IsAny<QueryOptions>(), It.IsAny<CancellationToken>()))
                     .ReturnsAsync(
                         new QueryResult<KVPair[]>
                         {
                             Response = new[]
                             {
-                                new KVPair("path/test") { Value = new List<byte> { 1 }.ToArray() }
+                                new KVPair("Test") { Value = new List<byte> { 1 }.ToArray() }
                             },
                             StatusCode = HttpStatusCode.OK
                         });
 
-                _consulConfigProvider.Load();
+                _provider.Load();
 
-                _consulConfigProvider.TryGet("test:Key", out string value);
+                _provider.TryGet("Key", out string value);
                 value.Should().Be("Value");
             }
 
             [Fact]
-            private void ShouldSetExceptionInLoadExceptionContextWhenExceptionDuringLoad()
+            private void ShouldSetLoadExceptionContextWhenExceptionDuringLoad()
             {
                 ConsulLoadExceptionContext exceptionContext = null;
-                var expectedException = new Exception("Failed to load from Consul agent");
+                var exception = new Exception("Failed to load from Consul agent");
 
-                _consulConfigClientMock
-                    .Setup(ccc => ccc.GetConfig("path/test", default(CancellationToken)))
-                    .ThrowsAsync(expectedException);
-                _source.OnLoadException = context =>
+                _kvEndpoint
+                    .Setup(kv => kv.List("Test", It.IsAny<QueryOptions>(), It.IsAny<CancellationToken>()))
+                    .ThrowsAsync(exception);
+                _source.OnLoadException = ctx =>
                 {
-                    context.Ignore = true;
-                    exceptionContext = context;
+                    ctx.Ignore = true;
+                    exceptionContext = ctx;
                 };
 
-                _consulConfigProvider.Load();
+                _provider.Load();
 
-                exceptionContext.Exception.Should().BeSameAs(expectedException);
+                exceptionContext
+                    .Should()
+                    .BeEquivalentTo(new ConsulLoadExceptionContext(_source, exception) { Ignore = true });
             }
 
             [Fact]
-            private void ShouldSetSourceInLoadExceptionContextWhenExceptionDuringLoad()
+            private void ShouldThrowExceptionIfNotIgnoredByClient()
             {
-                ConsulLoadExceptionContext exceptionContext = null;
-                _consulConfigClientMock
-                    .Setup(ccc => ccc.GetConfig("path/test", default(CancellationToken)))
-                    .ThrowsAsync(new Exception());
-                _source.OnLoadException = context =>
-                {
-                    context.Ignore = true;
-                    exceptionContext = context;
-                };
-
-                _consulConfigProvider.Load();
-
-                exceptionContext.Source.Should().BeSameAs(_source);
-            }
-
-            [Fact]
-            private void ShouldThrowExceptionIfOnLoadExceptionDoesNotSetIgnoreWhenExceptionDuringLoad()
-            {
-                _consulConfigClientMock
-                    .Setup(ccc => ccc.GetConfig("path/test", default(CancellationToken)))
+                _source.OnLoadException = ctx => ctx.Ignore = false;
+                _kvEndpoint
+                    .Setup(kv => kv.List("Test", It.IsAny<QueryOptions>(), It.IsAny<CancellationToken>()))
                     .ThrowsAsync(new Exception("Error"));
-                _source.OnLoadException = exceptionContext => { exceptionContext.Ignore = false; };
 
-                Action loading = _consulConfigProvider.Invoking(ccp => ccp.Load());
+                Action loading = _provider.Invoking(p => p.Load());
+
                 loading.Should().Throw<Exception>().WithMessage("Error");
             }
 
             [Fact]
-            private void ShouldThrowIfConfigDoesNotExistAndIsNotOptonalWhenLoad()
+            private void ShouldThrowWhenConfigDoesNotExistAndIsNotOptional()
             {
                 _source.Optional = false;
-                _source.OnLoadException = context => context.Ignore = false;
-                _consulConfigClientMock
-                    .Setup(ccc => ccc.GetConfig("path/test", default(CancellationToken)))
+                _source.OnLoadException = ctx => ctx.Ignore = false;
+                _kvEndpoint
+                    .Setup(kv => kv.List("Test", It.IsAny<QueryOptions>(), It.IsAny<CancellationToken>()))
                     .ReturnsAsync(new QueryResult<KVPair[]> { StatusCode = HttpStatusCode.NotFound });
 
-                Action loading = _consulConfigProvider.Invoking(ccp => ccp.Load());
-                loading.Should().Throw<Exception>()
-                       .WithMessage("The configuration for key path/test was not found and is not optional.");
+                Action loading = _provider.Invoking(p => p.Load());
+                loading
+                    .Should()
+                    .Throw<Exception>()
+                    .WithMessage("The configuration for key Test was not found and is not optional.");
             }
         }
 
-        public sealed class Reload : ConsulConfigurationProviderTests
+        public sealed class ReloadOnChange : ConsulConfigurationProviderTests
         {
-            private readonly ConfigurationReloadToken _firstChangeToken;
-            private readonly IConsulConfigurationSource _source;
-
-            public Reload()
+            public ReloadOnChange()
             {
-                _source = new ConsulConfigurationSource("Test", default(CancellationToken))
-                {
-                    Parser = _configParserMock.Object,
-                    ReloadOnChange = true
-                };
-                _firstChangeToken = new ConfigurationReloadToken();
-                _consulConfigClientMock
-                    .SetupSequence(
-                        ccc =>
-                            ccc.Watch(
-                                "Test",
-                                It.IsAny<Func<ConsulWatchExceptionContext, TimeSpan>>(),
-                                default(CancellationToken)))
-                    .Returns(_firstChangeToken)
-                    .Returns(new ConfigurationReloadToken());
-
-                _consulConfigProvider = new ConsulConfigurationProvider(
-                    _source,
-                    _consulConfigClientMock.Object);
+                _source.ReloadOnChange = true;
             }
 
             [Fact]
-            private void ShouldNotOverwriteNonOptionalConfigIfDoesNotExist()
+            private async Task ShouldCallOnWatchExceptionWithCountOfConsecutiveFailures()
             {
+                var exceptionContexts = new List<ConsulWatchExceptionContext>();
+                _source.Optional = true;
+                _source.OnWatchException = ctx =>
+                {
+                    exceptionContexts.Add(ctx);
+                    return TimeSpan.Zero;
+                };
+
+                var pollingCompleted = new TaskCompletionSource<bool>();
+
+                var exception1 = new Exception("Error during watch 1.");
+                var exception2 = new Exception("Error during watch 2.");
+                _kvEndpoint
+                    .SetupSequence(kv => kv.List("Test", It.IsAny<QueryOptions>(), It.IsAny<CancellationToken>()))
+                    .ReturnsAsync(new QueryResult<KVPair[]> { LastIndex = 13, StatusCode = HttpStatusCode.OK })
+                    .ThrowsAsync(exception1)
+                    .ThrowsAsync(exception2)
+                    .Returns(
+                        () =>
+                        {
+                            pollingCompleted.SetResult(true);
+                            return new TaskCompletionSource<QueryResult<KVPair[]>>().Task;
+                        });
+
+                _provider.Load();
+
+                await pollingCompleted.Task;
+
+                exceptionContexts
+                    .Should()
+                    .BeEquivalentTo(
+                        new List<ConsulWatchExceptionContext>
+                        {
+                            new ConsulWatchExceptionContext(exception1, 1, _source),
+                            new ConsulWatchExceptionContext(exception2, 2, _source)
+                        });
+            }
+
+            [Fact]
+            private async Task ShouldNotOverwriteNonOptionalConfigIfDoesNotExist()
+            {
+                var pollingCompleted = new TaskCompletionSource<bool>();
                 _source.Optional = false;
-                _consulConfigClientMock
-                    .SetupSequence(ccc => ccc.GetConfig("Test", default(CancellationToken)))
+                _kvEndpoint
+                    .SetupSequence(kv => kv.List("Test", It.IsAny<QueryOptions>(), It.IsAny<CancellationToken>()))
                     .ReturnsAsync(
                         new QueryResult<KVPair[]>
                         {
@@ -285,55 +378,280 @@ namespace Winton.Extensions.Configuration.Consul
                             },
                             StatusCode = HttpStatusCode.OK
                         })
-                    .ReturnsAsync(new QueryResult<KVPair[]> { StatusCode = HttpStatusCode.NotFound });
-                _configParserMock
+                    .ReturnsAsync(new QueryResult<KVPair[]> { StatusCode = HttpStatusCode.NotFound })
+                    .Returns(
+                        () =>
+                        {
+                            pollingCompleted.SetResult(true);
+                            return new TaskCompletionSource<QueryResult<KVPair[]>>().Task;
+                        });
+                _parser
                     .Setup(cp => cp.Parse(It.IsAny<MemoryStream>()))
                     .Returns(new Dictionary<string, string> { { "Key", "Test" } });
 
-                _consulConfigProvider.Load();
+                _provider.Load();
 
-                _firstChangeToken.OnReload();
+                await pollingCompleted.Task;
 
-                _consulConfigProvider.TryGet("Key", out string _).Should().BeTrue();
-            }
-
-            [Theory]
-            [InlineData(true)]
-            [InlineData(false)]
-            private void ShouldNotThrowIfDoesNotExist(bool optional)
-            {
-                _source.Optional = optional;
-                _consulConfigClientMock
-                    .Setup(ccc => ccc.GetConfig("Test", default(CancellationToken)))
-                    .ReturnsAsync(new QueryResult<KVPair[]> { StatusCode = HttpStatusCode.NotFound });
-
-                Action reloading = _firstChangeToken.Invoking(ct => ct.OnReload());
-                reloading.Should().NotThrow();
+                _provider.TryGet("Key", out string _).Should().BeTrue();
             }
 
             [Fact]
-            private void ShouldReloadConfigIfReloadOnChangeAndDataInConsulHasChanged()
+            private void ShouldNotReloadWhenPolling()
             {
-                _consulConfigClientMock
-                    .Setup(ccc => ccc.GetConfig("Test", default(CancellationToken)))
-                    .ReturnsAsync(new QueryResult<KVPair[]> { StatusCode = HttpStatusCode.OK });
+                _source.Optional = true;
+                _kvEndpoint
+                    .Setup(kv => kv.List("Test", It.IsAny<QueryOptions>(), It.IsAny<CancellationToken>()))
+                    .ReturnsAsync(new QueryResult<KVPair[]> { LastIndex = 13, StatusCode = HttpStatusCode.OK });
 
-                _firstChangeToken.OnReload();
+                _provider.Load();
+                _provider.Load();
 
-                Action verifying = () => _consulConfigClientMock
-                    .Verify(ccc => ccc.GetConfig("Test", default(CancellationToken)), Times.Once);
-                verifying.Should().NotThrow();
+                _kvEndpoint.Verify(
+                    kv =>
+                        kv.List(
+                            "Test",
+                            It.Is<QueryOptions>(options => options.WaitIndex == 0),
+                            It.IsAny<CancellationToken>()),
+                    Times.Once);
             }
 
             [Fact]
-            private void ShouldWatchForChangesIfSourceReloadOnChangesIsTrue()
+            private async Task ShouldReloadConfigWhenDataInConsulHasChanged()
             {
-                Action verifying =
-                    () =>
-                        _consulConfigClientMock.Verify(
-                            ccs => ccs.Watch("Test", _source.OnWatchException, default(CancellationToken)),
-                            Times.Once);
-                verifying.Should().NotThrow();
+                var reload = new TaskCompletionSource<bool>();
+                _provider
+                    .GetReloadToken()
+                    .RegisterChangeCallback(_ => reload.TrySetResult(true), new object());
+                _kvEndpoint
+                    .SetupSequence(kv => kv.List("Test", It.IsAny<QueryOptions>(), It.IsAny<CancellationToken>()))
+                    .ReturnsAsync(
+                        new QueryResult<KVPair[]>
+                        {
+                            LastIndex = 12,
+                            Response = new[]
+                            {
+                                new KVPair("Test") { Value = new List<byte> { 1 }.ToArray() }
+                            },
+                            StatusCode = HttpStatusCode.OK
+                        })
+                    .ReturnsAsync(
+                        new QueryResult<KVPair[]>
+                        {
+                            LastIndex = 13,
+                            Response = new[]
+                            {
+                                new KVPair("Test") { Value = new List<byte> { 1 }.ToArray() }
+                            },
+                            StatusCode = HttpStatusCode.OK
+                        })
+                    .Returns(new TaskCompletionSource<QueryResult<KVPair[]>>().Task);
+                _parser
+                    .SetupSequence(p => p.Parse(It.IsAny<Stream>()))
+                    .Returns(new Dictionary<string, string> { { "Key", "Test" } })
+                    .Returns(new Dictionary<string, string> { { "Key", "Test2" } });
+
+                _provider.Load();
+
+                await reload.Task;
+
+                _provider.TryGet("Key", out string value);
+                value.Should().Be("Test2");
+            }
+
+            [Fact]
+            private async Task ShouldResetConsecutiveFailureCountAfterASuccessfulPoll()
+            {
+                var exceptionContexts = new List<ConsulWatchExceptionContext>();
+                _source.Optional = true;
+                _source.OnWatchException = ctx =>
+                {
+                    exceptionContexts.Add(ctx);
+                    return TimeSpan.Zero;
+                };
+
+                var pollingCompleted = new TaskCompletionSource<bool>();
+
+                var exception1 = new Exception("Error during watch 1.");
+                var exception2 = new Exception("Error during watch 2.");
+                _kvEndpoint
+                    .SetupSequence(kv => kv.List("Test", It.IsAny<QueryOptions>(), It.IsAny<CancellationToken>()))
+                    .ReturnsAsync(new QueryResult<KVPair[]> { LastIndex = 13, StatusCode = HttpStatusCode.OK })
+                    .ThrowsAsync(exception1)
+                    .ReturnsAsync(new QueryResult<KVPair[]> { LastIndex = 13, StatusCode = HttpStatusCode.OK })
+                    .ThrowsAsync(exception2)
+                    .Returns(
+                        () =>
+                        {
+                            pollingCompleted.SetResult(true);
+                            return new TaskCompletionSource<QueryResult<KVPair[]>>().Task;
+                        });
+
+                _provider.Load();
+
+                await pollingCompleted.Task;
+
+                exceptionContexts
+                    .Should()
+                    .BeEquivalentTo(
+                        new List<ConsulWatchExceptionContext>
+                        {
+                            new ConsulWatchExceptionContext(exception1, 1, _source),
+                            new ConsulWatchExceptionContext(exception2, 1, _source)
+                        });
+            }
+
+            [Fact]
+            private async Task ShouldResetLastIndexWhenItGoesBackwards()
+            {
+                _source.Optional = true;
+                var queryOptions = new List<QueryOptions>();
+                var pollingCompleted = new TaskCompletionSource<bool>();
+
+                var results = new Queue<QueryResult<KVPair[]>>(
+                    new List<QueryResult<KVPair[]>>
+                    {
+                        new QueryResult<KVPair[]> { LastIndex = 13, StatusCode = HttpStatusCode.OK },
+                        new QueryResult<KVPair[]> { LastIndex = 12, StatusCode = HttpStatusCode.OK }
+                    });
+                _kvEndpoint
+                    .Setup(kv => kv.List("Test", It.IsAny<QueryOptions>(), It.IsAny<CancellationToken>()))
+                    .Returns<string, QueryOptions, CancellationToken>(
+                        (_, options, __) =>
+                        {
+                            queryOptions.Add(options);
+                            if (results.TryDequeue(out QueryResult<KVPair[]> result))
+                            {
+                                return Task.FromResult(result);
+                            }
+
+                            pollingCompleted.SetResult(true);
+                            return new TaskCompletionSource<QueryResult<KVPair[]>>().Task;
+                        });
+
+                _provider.Load();
+
+                await pollingCompleted.Task;
+
+                queryOptions
+                    .Should()
+                    .BeEquivalentTo(
+                        new List<QueryOptions>
+                        {
+                            new QueryOptions { WaitIndex = 0, WaitTime = _source.PollWaitTime },
+                            new QueryOptions { WaitIndex = 13, WaitTime = _source.PollWaitTime },
+                            new QueryOptions { WaitIndex = 0, WaitTime = _source.PollWaitTime }
+                        });
+            }
+
+            [Fact]
+            private async Task ShouldSetLastIndexToOneWhenConsulReturnsIndexNotGreaterThanZero()
+            {
+                _source.Optional = true;
+                var queryOptions = new List<QueryOptions>();
+                var pollingCompleted = new TaskCompletionSource<bool>();
+
+                var results = new Queue<QueryResult<KVPair[]>>(
+                    new List<QueryResult<KVPair[]>>
+                    {
+                        new QueryResult<KVPair[]> { LastIndex = 13, StatusCode = HttpStatusCode.OK },
+                        new QueryResult<KVPair[]> { LastIndex = 0, StatusCode = HttpStatusCode.OK },
+                        new QueryResult<KVPair[]> { LastIndex = 0, StatusCode = HttpStatusCode.OK }
+                    });
+                _kvEndpoint
+                    .Setup(kv => kv.List("Test", It.IsAny<QueryOptions>(), It.IsAny<CancellationToken>()))
+                    .Returns<string, QueryOptions, CancellationToken>(
+                        (_, options, __) =>
+                        {
+                            queryOptions.Add(options);
+                            if (results.TryDequeue(out QueryResult<KVPair[]> result))
+                            {
+                                return Task.FromResult(result);
+                            }
+
+                            pollingCompleted.SetResult(true);
+                            return new TaskCompletionSource<QueryResult<KVPair[]>>().Task;
+                        });
+
+                _provider.Load();
+
+                await pollingCompleted.Task;
+
+                queryOptions
+                    .Should()
+                    .BeEquivalentTo(
+                        new List<QueryOptions>
+                        {
+                            new QueryOptions { WaitIndex = 0, WaitTime = _source.PollWaitTime },
+                            new QueryOptions { WaitIndex = 13, WaitTime = _source.PollWaitTime },
+                            new QueryOptions { WaitIndex = 1, WaitTime = _source.PollWaitTime },
+                            new QueryOptions { WaitIndex = 1, WaitTime = _source.PollWaitTime }
+                        });
+            }
+
+            [Fact]
+            private async Task ShouldWaitForChangesAfterInitialLoad()
+            {
+                _source.Optional = true;
+                var queryOptions = new List<QueryOptions>();
+                var pollingCompleted = new TaskCompletionSource<bool>();
+
+                var results = new Queue<QueryResult<KVPair[]>>(
+                    new List<QueryResult<KVPair[]>>
+                    {
+                        new QueryResult<KVPair[]> { LastIndex = 13, StatusCode = HttpStatusCode.OK }
+                    });
+                _kvEndpoint
+                    .Setup(kv => kv.List("Test", It.IsAny<QueryOptions>(), It.IsAny<CancellationToken>()))
+                    .Returns<string, QueryOptions, CancellationToken>(
+                        (_, options, __) =>
+                        {
+                            queryOptions.Add(options);
+                            if (results.TryDequeue(out QueryResult<KVPair[]> result))
+                            {
+                                return Task.FromResult(result);
+                            }
+
+                            pollingCompleted.SetResult(true);
+                            return new TaskCompletionSource<QueryResult<KVPair[]>>().Task;
+                        });
+
+                _provider.Load();
+
+                await pollingCompleted.Task;
+
+                queryOptions
+                    .Should()
+                    .BeEquivalentTo(
+                        new List<QueryOptions>
+                        {
+                            new QueryOptions { WaitIndex = 0, WaitTime = _source.PollWaitTime },
+                            new QueryOptions { WaitIndex = 13, WaitTime = _source.PollWaitTime }
+                        });
+            }
+
+            [Fact]
+            private async Task ShouldWatchForChangesIfSourceReloadOnChangesIsTrue()
+            {
+                var pollingCompleted = new TaskCompletionSource<bool>();
+                _source.Optional = true;
+                _kvEndpoint
+                    .SetupSequence(kv => kv.List("Test", It.IsAny<QueryOptions>(), It.IsAny<CancellationToken>()))
+                    .ReturnsAsync(new QueryResult<KVPair[]> { StatusCode = HttpStatusCode.OK })
+                    .Returns(
+                        () =>
+                        {
+                            pollingCompleted.SetResult(true);
+                            return new TaskCompletionSource<QueryResult<KVPair[]>>().Task;
+                        });
+
+                _provider.Load();
+
+                await pollingCompleted.Task;
+
+                _kvEndpoint.Verify(
+                    kv => kv.List("Test", It.IsAny<QueryOptions>(), It.IsAny<CancellationToken>()),
+                    Times.Exactly(2));
             }
         }
     }
