@@ -3,7 +3,6 @@
   <PropertyGroup>
     <Description>Provides support for configuring .NET Core applications with Consul</Description>
     <GenerateDocumentationFile>True</GenerateDocumentationFile>
-    <LangVersion>8.0</LangVersion>
     <PackageId>Winton.Extensions.Configuration.Consul</PackageId>
     <PackageIconUrl>https://raw.githubusercontent.com/wintoncode/Winton.Extensions.Configuration.Consul/master/icon.jpg</PackageIconUrl>
     <PackageLicenseFile>LICENSE</PackageLicenseFile>
