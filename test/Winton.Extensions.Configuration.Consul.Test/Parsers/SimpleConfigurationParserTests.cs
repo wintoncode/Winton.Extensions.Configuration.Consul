@@ -4,7 +4,7 @@ using System.Text;
 using FluentAssertions;
 using Xunit;
 
-namespace Winton.Extensions.Configuration.Consul.Parsers.Simple
+namespace Winton.Extensions.Configuration.Consul.Parsers
 {
     public class SimpleConfigurationParserTests
     {

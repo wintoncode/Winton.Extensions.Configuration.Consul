@@ -4,7 +4,7 @@
 using System.Collections.Generic;
 using System.IO;
 
-namespace Winton.Extensions.Configuration.Consul.Parsers.Simple
+namespace Winton.Extensions.Configuration.Consul.Parsers
 {
     /// <inheritdoc />
     /// <summary>

@@ -1,7 +1,7 @@
 using System;
 using System.Threading;
 using FluentAssertions;
-using Winton.Extensions.Configuration.Consul.Parsers.Json;
+using Winton.Extensions.Configuration.Consul.Parsers;
 using Xunit;
 
 namespace Winton.Extensions.Configuration.Consul
