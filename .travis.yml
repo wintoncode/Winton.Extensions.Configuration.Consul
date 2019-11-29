@@ -13,7 +13,7 @@ matrix:
     - os: linux
       dist: bionic
       sudo: required
-      dotnet: 3.0.101
+      dotnet: 3.0
     - os: osx 
       osx_image: xcode11.2
       dotnet: 3.0.101
