@@ -22,7 +22,7 @@ Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "src", "src", "{03739F78-246
 EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "test", "test", "{972A51CA-2686-4B9B-8BBB-503B2A1BA630}"
 	ProjectSection(SolutionItems) = preProject
-		Directory.Build.props = Directory.Build.props
+		test\Directory.Build.props = test\Directory.Build.props
 		test\Rules.ruleset = test\Rules.ruleset
 	EndProjectSection
 EndProject
