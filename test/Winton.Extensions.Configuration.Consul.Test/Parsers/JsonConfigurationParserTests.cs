@@ -1,4 +1,3 @@
-using System.Collections.Generic;
 using System.IO;
 using System.Text;
 using FluentAssertions;
@@ -22,11 +21,9 @@ namespace Winton.Extensions.Configuration.Consul.Parsers
             [InlineData("{\"parent\": {\"child\": \"Value\"} }", "parent:child", "Value")]
             private void ShouldParseSimpleJsonFromStream(string json, string key, string expectedValue)
             {
-                using (Stream stream = new MemoryStream(Encoding.UTF8.GetBytes(json)))
-                {
-                    IDictionary<string, string> result = _parser.Parse(stream);
-                    result[key].Should().Be(expectedValue);
-                }
+                using Stream stream = new MemoryStream(Encoding.UTF8.GetBytes(json));
+                var result = _parser.Parse(stream);
+                result[key].Should().Be(expectedValue);
             }
         }
     }

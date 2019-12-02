@@ -11,12 +11,12 @@ env:
 matrix:
   include:
     - os: linux
-      dist: xenial
+      dist: bionic
       sudo: required
       dotnet: 3.0
     - os: osx 
       osx_image: xcode11.2
-      dotnet: 3.0.100
+      dotnet: 3.0.101
       before_install:
         - ulimit -n 4096
 script:

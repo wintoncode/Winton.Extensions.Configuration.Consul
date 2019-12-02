@@ -13,14 +13,14 @@ namespace Winton.Extensions.Configuration.Consul.Extensions
     {
         public sealed class HasValue : KVPairQueryResultExtensionsTests
         {
-            public static IEnumerable<object[]> TestCases => new List<object[]>
+            public static IEnumerable<object?[]> TestCases => new List<object?[]>
             {
-                new object[]
+                new object?[]
                 {
                     null,
                     false
                 },
-                new object[]
+                new object?[]
                 {
                     new QueryResult<KVPair[]>
                     {
@@ -28,16 +28,16 @@ namespace Winton.Extensions.Configuration.Consul.Extensions
                     },
                     false
                 },
-                new object[]
+                new object?[]
                 {
                     new QueryResult<KVPair[]>
                     {
-                        Response = null,
+                        Response = null!,
                         StatusCode = HttpStatusCode.OK
                     },
                     false
                 },
-                new object[]
+                new object?[]
                 {
                     new QueryResult<KVPair[]>
                     {
@@ -48,7 +48,7 @@ namespace Winton.Extensions.Configuration.Consul.Extensions
                     },
                     false
                 },
-                new object[]
+                new object?[]
                 {
                     new QueryResult<KVPair[]>
                     {
@@ -63,7 +63,7 @@ namespace Winton.Extensions.Configuration.Consul.Extensions
                     },
                     false
                 },
-                new object[]
+                new object?[]
                 {
                     new QueryResult<KVPair[]>
                     {
@@ -75,7 +75,7 @@ namespace Winton.Extensions.Configuration.Consul.Extensions
                     },
                     false
                 },
-                new object[]
+                new object?[]
                 {
                     new QueryResult<KVPair[]>
                     {
@@ -92,7 +92,7 @@ namespace Winton.Extensions.Configuration.Consul.Extensions
                     },
                     false
                 },
-                new object[]
+                new object?[]
                 {
                     new QueryResult<KVPair[]>
                     {
@@ -110,7 +110,7 @@ namespace Winton.Extensions.Configuration.Consul.Extensions
                     },
                     true
                 },
-                new object[]
+                new object?[]
                 {
                     new QueryResult<KVPair[]>
                     {
@@ -129,7 +129,7 @@ namespace Winton.Extensions.Configuration.Consul.Extensions
                     },
                     true
                 },
-                new object[]
+                new object?[]
                 {
                     new QueryResult<KVPair[]>
                     {
@@ -156,7 +156,7 @@ namespace Winton.Extensions.Configuration.Consul.Extensions
                 QueryResult<KVPair[]> queryResult,
                 bool expected)
             {
-                bool hasValue = queryResult.HasValue();
+                var hasValue = queryResult.HasValue();
 
                 hasValue.Should().Be(expected);
             }
@@ -182,7 +182,7 @@ namespace Winton.Extensions.Configuration.Consul.Extensions
                     .Setup(p => p.Parse(It.IsAny<Stream>()))
                     .Returns(new Dictionary<string, string> { { "key", "value" } });
 
-                Dictionary<string, string> config = result.ToConfigDictionary("test/path", _parser.Object);
+                var config = result.ToConfigDictionary("test/path", _parser.Object);
 
                 config.Should().BeEmpty();
             }
@@ -226,7 +226,7 @@ namespace Winton.Extensions.Configuration.Consul.Extensions
                     .Setup(p => p.Parse(It.IsAny<Stream>()))
                     .Returns(new Dictionary<string, string> { { "kEy", "value" } });
 
-                Dictionary<string, string> config = result.ToConfigDictionary(
+                var config = result.ToConfigDictionary(
                     "path/test",
                     _parser.Object);
 
@@ -248,7 +248,7 @@ namespace Winton.Extensions.Configuration.Consul.Extensions
                     .Setup(p => p.Parse(It.IsAny<Stream>()))
                     .Returns(new Dictionary<string, string> { { "Key", "Value" } });
 
-                Dictionary<string, string> config = result.ToConfigDictionary("path", _parser.Object);
+                var config = result.ToConfigDictionary("path", _parser.Object);
 
                 config.Should().Contain(new KeyValuePair<string, string>("test:Key", "Value"));
             }

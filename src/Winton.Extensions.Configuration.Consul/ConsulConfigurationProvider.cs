@@ -1,5 +1,5 @@
 // Copyright (c) Winton. All rights reserved.
-// Licensed under the Apache License, Version 2.0. See LICENCE in the project root for license information.
+// Licensed under the Apache License, Version 2.0. See LICENSE in the project root for license information.
 
 using System;
 using System.Net;
@@ -13,7 +13,7 @@ namespace Winton.Extensions.Configuration.Consul
 {
     /// <summary>
     ///     Each instance loads configuration for the key in Consul that is specified in
-    ///     the contained <see cref="IConsulConfigurationSource"/>.
+    ///     the contained <see cref="IConsulConfigurationSource" />.
     ///     It has the ability to automatically reload the config if it changes in Consul.
     /// </summary>
     /// <remarks>
@@ -26,7 +26,7 @@ namespace Winton.Extensions.Configuration.Consul
         private readonly IConsulClientFactory _consulClientFactory;
         private readonly IConsulConfigurationSource _source;
         private ulong _lastIndex;
-        private Task _pollTask;
+        private Task? _pollTask;
 
         public ConsulConfigurationProvider(
             IConsulConfigurationSource source,
@@ -70,7 +70,7 @@ namespace Winton.Extensions.Configuration.Consul
         {
             try
             {
-                QueryResult<KVPair[]> result = await GetKvPairs(false).ConfigureAwait(false);
+                var result = await GetKvPairs(false).ConfigureAwait(false);
 
                 if (result.HasValue())
                 {
@@ -96,30 +96,27 @@ namespace Winton.Extensions.Configuration.Consul
 
         private async Task<QueryResult<KVPair[]>> GetKvPairs(bool waitForChange)
         {
-            using (IConsulClient consulClient = _consulClientFactory.Create())
+            using var consulClient = _consulClientFactory.Create();
+            var queryOptions = new QueryOptions
             {
-                var queryOptions = new QueryOptions
-                {
-                    WaitTime = _source.PollWaitTime,
-                    WaitIndex = waitForChange ? _lastIndex : 0
+                WaitTime = _source.PollWaitTime,
+                WaitIndex = waitForChange ? _lastIndex : 0
+            };
+
+            var result =
+                await consulClient
+                    .KV
+                    .List(_source.Key, queryOptions, _cancellationTokenSource.Token)
+                    .ConfigureAwait(false);
+
+            return result.StatusCode switch
+            {
+                HttpStatusCode.OK => result,
+                HttpStatusCode.NotFound => result,
+                _ =>
+                    throw
+                        new Exception($"Error loading configuration from consul. Status code: {result.StatusCode}.")
                 };
-
-                QueryResult<KVPair[]> result =
-                    await consulClient
-                        .KV
-                        .List(_source.Key, queryOptions, _cancellationTokenSource.Token)
-                        .ConfigureAwait(false);
-
-                switch (result.StatusCode)
-                {
-                    case HttpStatusCode.OK:
-                    case HttpStatusCode.NotFound:
-                        return result;
-                    default:
-                        throw new Exception(
-                            $"Error loading configuration from consul. Status code: {result.StatusCode}.");
-                }
-            }
         }
 
         private async Task PollingLoop()
@@ -129,7 +126,7 @@ namespace Winton.Extensions.Configuration.Consul
             {
                 try
                 {
-                    QueryResult<KVPair[]> result = await GetKvPairs(true).ConfigureAwait(false);
+                    var result = await GetKvPairs(true).ConfigureAwait(false);
 
                     if (result.HasValue() && result.LastIndex > _lastIndex)
                     {
@@ -142,7 +139,7 @@ namespace Winton.Extensions.Configuration.Consul
                 }
                 catch (Exception exception)
                 {
-                    TimeSpan wait =
+                    var wait =
                         _source.OnWatchException?.Invoke(
                             new ConsulWatchExceptionContext(exception, ++consecutiveFailureCount, _source)) ??
                         TimeSpan.FromSeconds(5);

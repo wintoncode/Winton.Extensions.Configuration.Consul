@@ -154,7 +154,7 @@ namespace Winton.Extensions.Configuration.Consul.Extensions
                     }
                 };
 
-                IEnumerable<KeyValuePair<string, string>> config = kvPair.ConvertToConfig(rootKey, _parserMock.Object);
+                var config = kvPair.ConvertToConfig(rootKey, _parserMock.Object);
 
                 config.Should().BeEquivalentTo(expected);
             }
@@ -227,7 +227,7 @@ namespace Winton.Extensions.Configuration.Consul.Extensions
             [MemberData(nameof(TestCases))]
             private void ShouldReturnTrueIfKVPairIsLeafWithNonEmptyArrayValue(KVPair kvPair, bool expected)
             {
-                bool hasValue = kvPair.HasValue();
+                var hasValue = kvPair.HasValue();
 
                 hasValue.Should().Be(expected);
             }
@@ -242,7 +242,7 @@ namespace Winton.Extensions.Configuration.Consul.Extensions
             {
                 var kvPair = new KVPair(key);
 
-                bool isLeafNode = kvPair.IsLeafNode();
+                var isLeafNode = kvPair.IsLeafNode();
 
                 isLeafNode.Should().Be(expected);
             }

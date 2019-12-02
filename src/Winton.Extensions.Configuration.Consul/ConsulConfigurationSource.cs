@@ -1,5 +1,5 @@
 // Copyright (c) Winton. All rights reserved.
-// Licensed under the Apache License, Version 2.0. See LICENCE in the project root for license information.
+// Licensed under the Apache License, Version 2.0. See LICENSE in the project root for license information.
 
 using System;
 using System.Net.Http;
@@ -11,6 +11,8 @@ namespace Winton.Extensions.Configuration.Consul
 {
     internal sealed class ConsulConfigurationSource : IConsulConfigurationSource
     {
+        private string? _keyToRemove;
+
         public ConsulConfigurationSource(string key)
         {
             if (string.IsNullOrWhiteSpace(key))
@@ -19,31 +21,34 @@ namespace Winton.Extensions.Configuration.Consul
             }
 
             Key = key;
-            KeyToRemove = Key;
             Parser = new JsonConfigurationParser();
         }
 
-        public Action<ConsulClientConfiguration> ConsulConfigurationOptions { get; set; }
+        public Action<ConsulClientConfiguration>? ConsulConfigurationOptions { get; set; }
 
-        public Action<HttpClientHandler> ConsulHttpClientHandlerOptions { get; set; }
+        public Action<HttpClientHandler>? ConsulHttpClientHandlerOptions { get; set; }
 
-        public Action<HttpClient> ConsulHttpClientOptions { get; set; }
+        public Action<HttpClient>? ConsulHttpClientOptions { get; set; }
 
         public string Key { get; }
 
-        public string KeyToRemove { get; set; }
+        public string KeyToRemove
+        {
+            get => _keyToRemove ?? Key;
+            set => _keyToRemove = value;
+        }
 
-        public Action<ConsulLoadExceptionContext> OnLoadException { get; set; }
+        public Action<ConsulLoadExceptionContext>? OnLoadException { get; set; }
 
-        public Func<ConsulWatchExceptionContext, TimeSpan> OnWatchException { get; set; }
+        public Func<ConsulWatchExceptionContext, TimeSpan>? OnWatchException { get; set; }
 
         public bool Optional { get; set; } = false;
 
         public IConfigurationParser Parser { get; set; }
 
-        public bool ReloadOnChange { get; set; } = false;
-
         public TimeSpan PollWaitTime { get; set; } = TimeSpan.FromMinutes(5);
+
+        public bool ReloadOnChange { get; set; } = false;
 
         public IConfigurationProvider Build(IConfigurationBuilder builder)
         {

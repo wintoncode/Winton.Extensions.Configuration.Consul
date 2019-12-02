@@ -1,12 +1,8 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
-    <Authors>Winton</Authors>
-    <Company>Winton</Company>
-    <Copyright>Copyright 2018 Winton</Copyright>
     <Description>Provides support for configuring .NET Core applications with Consul</Description>
     <GenerateDocumentationFile>True</GenerateDocumentationFile>
-    <NoWarn>$(NoWarn);SA1101;SA1309;SA1413;</NoWarn>
     <PackageId>Winton.Extensions.Configuration.Consul</PackageId>
     <PackageIconUrl>https://raw.githubusercontent.com/wintoncode/Winton.Extensions.Configuration.Consul/master/icon.jpg</PackageIconUrl>
     <PackageLicenseFile>LICENSE</PackageLicenseFile>
@@ -17,7 +13,6 @@
     <RepositoryType>git</RepositoryType>
     <RepositoryUrl>https://github.com/wintoncode/Winton.Extensions.Configuration.Consul</RepositoryUrl>
     <TargetFrameworks>netstandard2.0;net461</TargetFrameworks>
-    <TreatWarningsAsErrors>True</TreatWarningsAsErrors>
   </PropertyGroup>
 
   <PropertyGroup Condition="'$(Configuration)' == 'Release'">
@@ -33,8 +28,6 @@
     <PackageReference Include="Consul" Version="0.7.2.6" />
     <PackageReference Include="Microsoft.Extensions.Configuration" Version="3.0.0" />
     <PackageReference Include="Microsoft.Extensions.Configuration.Json" Version="3.0.0" />
-    <PackageReference Include="StyleCop.Analyzers" Version="1.1.118" PrivateAssets="All" />
   </ItemGroup>
 
 </Project>
-  
