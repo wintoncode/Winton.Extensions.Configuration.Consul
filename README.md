@@ -14,58 +14,20 @@ Add `Winton.Extensions.Configuration.Consul` to your project's dependencies, eit
 ## Usage
 
 ### Minimal Setup
-The library provides an extension method called `AddConsul` for `IConfigurationBuilder` in the same way that other configuration providers do. The `IConfigurationBuilder` is usually configured in either the `Program` or `Startup` class for an ASP.NET Core application. See Microsoft's [documentation](https://docs.microsoft.com/en-us/aspnet/core/fundamentals/configuration/?view=aspnetcore-2.1) for more information about `IConfigurationBuilder`.
+
+The library provides an extension method called `AddConsul` for `IConfigurationBuilder` in the same way that other configuration providers do. The `IConfigurationBuilder` is usually configured in either the `Program` or `Startup` class for an ASP.NET Core application. See Microsoft's [documentation](https://docs.microsoft.com/en-us/aspnet/core/fundamentals/configuration/?view=aspnetcore-3.0) for more information about `IConfigurationBuilder`.
 
 A minimal example is shown below:
 
 ```csharp
-var cancellationTokenSource = new cancellationTokenSource();
 builder
-    .AddConsul(
-        $"{env.ApplicationName}/{env.EnvironmentName}",
-        cancellationTokenSource.Token);
+    .AddConsul($"{env.ApplicationName}/{env.EnvironmentName}");
 ```
 
 Assuming the application is running in the 'Development' environment and the application name is 'Website', then this will load a JSON configuration object from the `Website/Development` key in Consul.
 
-The `CancellationToken` is used to cancel any active requests/watches to/on Consul.
-It is recommended that this is cancelled during application shutdown to clean up resources. This will typically be done in one of two places. Either in the `Program` class, for example:
-
-```csharp
-public static void Main(string[] args)
-{
-    var cancellationTokenSource = new CancellationTokenSource();
-    WebHost
-        .CreateDefaultBuilder(args)
-        .ConfigureAppConfiguration(
-            builder => builder.AddConsul("key", cancellationTokenSource.Token))
-        // Rest of webhost setup
-        .Build()
-        .Run();
-    cancellationTokenSource.Cancel();
-}
-```
-
-Or in the `Startup` class, for example:
-
-```csharp
-public Startup()
-{
-    _cancellationTokenSource = new cancellationTokenSource();
-    var builder = new ConfigurationBuilder()
-        .AddConsul("key", _cancellationTokenSource.Token);
-    Configuration = builder.Build();
-}
-
-public void Configure(IApplicationBuilder app, IHostingEnvironment env, IApplicationLifetime appLifetime)
-{
-    // Other app configuration
-
-    appLifetime.ApplicationStopping.Register(_cancellationTokenSource.Cancel);
-}
-```
-
 ### Options
+
 `AddConsul` has an overload with an additional third parameter of type `Action<IConsulConfigurationSource>` which allows the options outlined below to be set.
 
 * **`ConsulConfigurationOptions`**
@@ -77,20 +39,32 @@ public void Configure(IApplicationBuilder app, IHostingEnvironment env, IApplica
 * **`ConsulHttpClientOptions`**
 
    An `Action<HttpClient>` that can be used to configure the underlying Consul client's HTTP options.
+* **`KeyToRemove`**
+
+   The portion of the Consul key to remove from the configuration keys.
+   By default, when the configuration is parsed, the keys are created by removing the root key in Consul where the configuration is located.
+   This defaults to `Key`.
 * **`OnLoadException`**
 
    An `Action<ConsulLoadExceptionContext>` that can be used to configure how exceptions thrown during the first load should be handled.
 * **`OnWatchException`**
 
    A `Func<ConsulWatchExceptionContext, TimeSpan>` that can be used to configure how exceptions thrown when watching for changes should be handled.
-   The `TimeSpan` that is returned is used to set a delay before retrying. 
-   The `ConsulWatchExceptionContext` provides data that can be used to implement a backoff strategy or to cancel watching altogether.
+   The `TimeSpan` that is returned is used to set a delay before retrying.
+   The `ConsulWatchExceptionContext` provides data that can be used to implement a back-off strategy or to cancel watching altogether.
 * **`Optional`**
 
    A `bool` that indicates whether the config is optional. If `false` then it will throw during the first load if the config is missing for the given key. Defaults to `false`.
 * **`Parser`**
 
    The parser to use, which should match the format of the configuration stored in Consul. Defaults to `JsonConfigurationParser`. Either use those under `Winton.Extensions.Configuration.Consul.Parsers` or create your own by implementing `IConfigurationParser`.
+* **`PollWaitTime`**
+
+   The amount of time the client should wait before timing out when polling for changes.
+   If this is set too low it can lead to excessive requests being issued to Consul.
+   Note this setting does not affect how quickly updates propagate, because when a value changes the long polling query returns immediately.
+   It is better to think of this as the frequency with which it issues calls in the long polling loop in the case where there is no change.
+   Defaults to 5 minutes.
 * **`ReloadOnChange`**
 
    A `bool` indicating whether to reload the config when it changes in Consul.
@@ -101,10 +75,11 @@ public void Configure(IApplicationBuilder app, IHostingEnvironment env, IApplica
 By default this configuration provider will load all key-value pairs from Consul under the specified root key, but by default it assumes that the values of the leaf keys are encoded as JSON.
 
 Take the following example of a particular instance of the Consul KV store:
+
 ```
 - myApp/
     - auth/
-        { 
+        {
             "appId": "guid",
             "claims": [
                 "email",
@@ -127,7 +102,7 @@ var configuration = builder
 
 The resultant configuration would contain sections for `auth` and `logging`. As a concrete example `configuration.GetValue<string>("logging:level")` would return `"warn"` and `configuration.GetValue<string>("auth:claims:0")` would return `"email"`.
 
-Sometimes however, config in Consul is stored as a set of expanded keys. For instance, tools such as `consul-cli` load config in this format. 
+Sometimes however, config in Consul is stored as a set of expanded keys. For instance, tools such as `consul-cli` load config in this format.
 
 The config in this case can be thought of as a tree under a specific root key in Consul. For instance, continuing with the example above, the config would be stored as:
 
@@ -152,14 +127,13 @@ As outlined above this configuration provider deals with recursive keys by defau
 builder
     .AddConsul(
         "myApp",
-        cancellationToken,
         options =>
         {
             options.Parser = new SimpleConfigurationParser();
         });
 ```
 
-The `SimpleConfigurationParser` expects to encounter a scalar value at each leaf key in the tree. 
+The `SimpleConfigurationParser` expects to encounter a scalar value at each leaf key in the tree.
 
 If you need to support both expanded keys and JSON values then this can be achieved by putting them under different root keys and adding multiple configuration sources. For example:
 
@@ -167,7 +141,6 @@ If you need to support both expanded keys and JSON values then this can be achie
 builder
     .AddConsul(
         "myApp/expandedKeys",
-        cancellationToken,
         options =>
         {
             options.Parser = new SimpleConfigurationParser();
