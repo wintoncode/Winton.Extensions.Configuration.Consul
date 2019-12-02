@@ -43,7 +43,7 @@ namespace Winton.Extensions.Configuration.Consul
         string Key { get; }
 
         /// <summary>
-        ///     Gets the portion of the Consul key to remove from the configuration keys.
+        ///     Gets or sets the portion of the Consul key to remove from the configuration keys.
         ///     By default, when the configuration is parsed, the keys are created by removing the root key in Consul
         ///     where the configuration is located.
         ///     Defaults to <see cref="Key" />.
