@@ -48,7 +48,7 @@ namespace Winton.Extensions.Configuration.Consul
         ///     where the configuration is located.
         ///     Defaults to <see cref="Key" />.
         /// </summary>
-        string KeyToRemove { get; }
+        string KeyToRemove { get; set; }
 
         /// <summary>
         ///     Gets or sets an <see cref="Action" /> that is invoked when an exception is raised during config load.
