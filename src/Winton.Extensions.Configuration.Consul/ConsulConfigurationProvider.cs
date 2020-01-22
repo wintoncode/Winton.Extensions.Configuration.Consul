@@ -143,7 +143,8 @@ namespace Winton.Extensions.Configuration.Consul
                         _source.OnWatchException?.Invoke(
                             new ConsulWatchExceptionContext(exception, ++consecutiveFailureCount, _source)) ??
                         TimeSpan.FromSeconds(5);
-                    await Task.Delay(wait, _cancellationTokenSource.Token);
+                    await Task.Delay(wait, _cancellationTokenSource.Token)
+                        .ContinueWith(_ => { }); // suppress cancellation exceptions
                 }
             }
         }
