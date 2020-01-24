@@ -44,9 +44,14 @@ namespace Winton.Extensions.Configuration.Consul
 
         public void Dispose()
         {
-            _cancellationTokenSource.Cancel();
-            _pollTask?.Wait(500);
-            _cancellationTokenSource.Dispose();
+            if (_pollTask != null)
+            {
+                _cancellationTokenSource.Cancel();
+            }
+            else
+            {
+                _cancellationTokenSource.Dispose();
+            }
         }
 
         public override void Load()
@@ -62,7 +67,8 @@ namespace Winton.Extensions.Configuration.Consul
             // Polling starts after the initial load to ensure no concurrent access to the key from this instance
             if (_source.ReloadOnChange)
             {
-                _pollTask = Task.Run(PollingLoop);
+                _pollTask = Task.Run(PollingLoop, _cancellationTokenSource.Token)
+                    .ContinueWith(_ => _cancellationTokenSource.Dispose());
             }
         }
 
@@ -113,10 +119,8 @@ namespace Winton.Extensions.Configuration.Consul
             {
                 HttpStatusCode.OK => result,
                 HttpStatusCode.NotFound => result,
-                _ =>
-                    throw
-                        new Exception($"Error loading configuration from consul. Status code: {result.StatusCode}.")
-                };
+                _ => throw new Exception($"Error loading configuration from consul. Status code: {result.StatusCode}.")
+            };
         }
 
         private async Task PollingLoop()
@@ -143,8 +147,7 @@ namespace Winton.Extensions.Configuration.Consul
                         _source.OnWatchException?.Invoke(
                             new ConsulWatchExceptionContext(exception, ++consecutiveFailureCount, _source)) ??
                         TimeSpan.FromSeconds(5);
-                    await Task.Delay(wait, _cancellationTokenSource.Token)
-                        .ContinueWith(_ => { }); // suppress cancellation exceptions
+                    await Task.Delay(wait, _cancellationTokenSource.Token);
                 }
             }
         }
