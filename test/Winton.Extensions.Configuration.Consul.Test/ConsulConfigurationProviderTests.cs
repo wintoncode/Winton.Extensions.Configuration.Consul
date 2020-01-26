@@ -72,8 +72,8 @@ namespace Winton.Extensions.Configuration.Consul
             private async Task ShouldCancelPollingTaskWhenReloading()
             {
                 var expectedKvCalls = 0;
-                var pollingCancelled = new TaskCompletionSource<CancellationToken>();
-                CancellationToken cancellationToken = default;
+                var pollingCancelled = new TaskCompletionSource<bool>();
+
                 _source.ReloadOnChange = true;
                 _source.Optional = true;
                 _kvEndpoint
@@ -87,18 +87,23 @@ namespace Winton.Extensions.Configuration.Consul
                             }
 
                             expectedKvCalls++;
-                            if (cancellationToken == default)
+                            if (token.CanBeCanceled)
                             {
-                                cancellationToken = token;
+                                token.Register(() => pollingCancelled.TrySetResult(true));
                             }
                         })
-                    .Returns(
-                        pollingCancelled.Task.IsCompleted
-                            ? Task.FromCanceled<QueryResult<KVPair[]>>(pollingCancelled.Task.Result)
-                            : Task.FromResult(new QueryResult<KVPair[]> { StatusCode = HttpStatusCode.OK }));
+                    .Returns<string, QueryOptions, CancellationToken>(
+                        (_, __, token) =>
+                        {
+                            return token.IsCancellationRequested
+                                ? Task.FromCanceled<QueryResult<KVPair[]>>(token)
+                                : Task.Delay(5).ContinueWith(t => new QueryResult<KVPair[]> { StatusCode = HttpStatusCode.OK });
+                        });
 
                 _provider.Load();
-                cancellationToken.Register(() => pollingCancelled.SetResult(cancellationToken));
+
+                // allow polling loop to spin up
+                await Task.Delay(25);
 
                 _provider.Dispose();
 
