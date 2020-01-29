@@ -56,22 +56,22 @@ namespace Winton.Extensions.Configuration.Consul
                 return;
             }
 
-            var ct = _cancellationTokenSource.Token;
+            var cancellationToken = _cancellationTokenSource.Token;
 
-            DoLoad(ct).GetAwaiter().GetResult();
+            DoLoad(cancellationToken).GetAwaiter().GetResult();
 
             // Polling starts after the initial load to ensure no concurrent access to the key from this instance
             if (_source.ReloadOnChange)
             {
-                _pollTask = Task.Run(() => PollingLoop(ct), ct);
+                _pollTask = Task.Run(() => PollingLoop(cancellationToken), cancellationToken);
             }
         }
 
-        private async Task DoLoad(CancellationToken ct)
+        private async Task DoLoad(CancellationToken cancellationToken)
         {
             try
             {
-                var result = await GetKvPairs(false, ct).ConfigureAwait(false);
+                var result = await GetKvPairs(false, cancellationToken).ConfigureAwait(false);
 
                 if (result.HasValue())
                 {
@@ -95,7 +95,7 @@ namespace Winton.Extensions.Configuration.Consul
             }
         }
 
-        private async Task<QueryResult<KVPair[]>> GetKvPairs(bool waitForChange, CancellationToken ct)
+        private async Task<QueryResult<KVPair[]>> GetKvPairs(bool waitForChange, CancellationToken cancellationToken)
         {
             using var consulClient = _consulClientFactory.Create();
             var queryOptions = new QueryOptions
@@ -107,7 +107,7 @@ namespace Winton.Extensions.Configuration.Consul
             var result =
                 await consulClient
                     .KV
-                    .List(_source.Key, queryOptions, ct)
+                    .List(_source.Key, queryOptions, cancellationToken)
                     .ConfigureAwait(false);
 
             return result.StatusCode switch
@@ -118,14 +118,14 @@ namespace Winton.Extensions.Configuration.Consul
             };
         }
 
-        private async Task PollingLoop(CancellationToken ct)
+        private async Task PollingLoop(CancellationToken cancellationToken)
         {
             var consecutiveFailureCount = 0;
-            while (!ct.IsCancellationRequested)
+            while (!cancellationToken.IsCancellationRequested)
             {
                 try
                 {
-                    var result = await GetKvPairs(true, ct).ConfigureAwait(false);
+                    var result = await GetKvPairs(true, cancellationToken).ConfigureAwait(false);
 
                     if (result.HasValue() && result.LastIndex > _lastIndex)
                     {
@@ -142,7 +142,7 @@ namespace Winton.Extensions.Configuration.Consul
                         _source.OnWatchException?.Invoke(
                             new ConsulWatchExceptionContext(exception, ++consecutiveFailureCount, _source)) ??
                         TimeSpan.FromSeconds(5);
-                    await Task.Delay(wait, ct);
+                    await Task.Delay(wait, cancellationToken);
                 }
             }
         }

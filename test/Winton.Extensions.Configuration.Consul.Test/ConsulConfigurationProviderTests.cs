@@ -94,11 +94,9 @@ namespace Winton.Extensions.Configuration.Consul
                         })
                     .Returns<string, QueryOptions, CancellationToken>(
                         (_, __, token) =>
-                        {
-                            return token.IsCancellationRequested
+                            token.IsCancellationRequested
                                 ? Task.FromCanceled<QueryResult<KVPair[]>>(token)
-                                : Task.Delay(5).ContinueWith(t => new QueryResult<KVPair[]> { StatusCode = HttpStatusCode.OK });
-                        });
+                                : Task.Delay(5).ContinueWith(t => new QueryResult<KVPair[]> { StatusCode = HttpStatusCode.OK }));
 
                 _provider.Load();
 
