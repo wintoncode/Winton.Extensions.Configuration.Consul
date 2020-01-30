@@ -4,12 +4,11 @@
     <Description>Provides support for configuring .NET Core applications with Consul</Description>
     <GenerateDocumentationFile>True</GenerateDocumentationFile>
     <PackageId>Winton.Extensions.Configuration.Consul</PackageId>
-    <PackageIconUrl>https://raw.githubusercontent.com/wintoncode/Winton.Extensions.Configuration.Consul/master/icon.jpg</PackageIconUrl>
+    <PackageIcon>icon.jpg</PackageIcon>
     <PackageLicenseFile>LICENSE</PackageLicenseFile>
     <PackageProjectUrl>https://github.com/wintoncode/Winton.Extensions.Configuration.Consul</PackageProjectUrl>
     <PackageRequireLicenseAcceptance>False</PackageRequireLicenseAcceptance>
     <PackageTags>.NET;Core;dotnetcore;ASP.NET;aspnetcore;configuration;consul;winton;wintoncode</PackageTags>
-    <PackageVersion>$(NuGetVersion)</PackageVersion>
     <RepositoryType>git</RepositoryType>
     <RepositoryUrl>https://github.com/wintoncode/Winton.Extensions.Configuration.Consul</RepositoryUrl>
     <TargetFrameworks>netstandard2.0;net461</TargetFrameworks>
@@ -20,7 +19,7 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <AdditionalFiles Include="../../stylecop.json" />
+    <None Include="../../icon.jpg" Pack="true" PackagePath="" />
     <None Include="../../LICENSE" Pack="true" PackagePath="" />
   </ItemGroup>
 
