@@ -6,10 +6,6 @@
   </PropertyGroup>
   
   <ItemGroup>
-    <AdditionalFiles Include="../../stylecop.json" />
-  </ItemGroup>
-
-  <ItemGroup>
     <ProjectReference Include="..\..\src\Winton.Extensions.Configuration.Consul\Winton.Extensions.Configuration.Consul.csproj" />
   </ItemGroup>
 
