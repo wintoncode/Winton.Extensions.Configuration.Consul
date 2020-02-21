@@ -27,6 +27,7 @@ namespace Winton.Extensions.Configuration.Consul
         private readonly IConsulConfigurationSource _source;
         private ulong _lastIndex;
         private Task? _pollTask;
+        private bool _disposed;
 
         public ConsulConfigurationProvider(
             IConsulConfigurationSource source,
@@ -44,8 +45,17 @@ namespace Winton.Extensions.Configuration.Consul
 
         public void Dispose()
         {
-            _cancellationTokenSource.Cancel();
-            _cancellationTokenSource.Dispose();
+            lock (this)
+            {
+                if (_disposed)
+                {
+                    return;
+                }
+
+                _cancellationTokenSource.Cancel();
+                _cancellationTokenSource.Dispose();
+                _disposed = true;
+            }
         }
 
         public override void Load()
