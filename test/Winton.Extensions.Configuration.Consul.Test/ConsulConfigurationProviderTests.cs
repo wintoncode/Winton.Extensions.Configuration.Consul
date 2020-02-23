@@ -125,9 +125,9 @@ namespace Winton.Extensions.Configuration.Consul
                 _provider.Load();
                 _provider.Dispose();
 
-                var disposeException = Record.Exception(() => _provider.Dispose());
+                var secondDispose = _provider.Invoking(p => p.Dispose());
 
-                Assert.Null(disposeException);
+                secondDispose.Should().NotThrow();
             }
         }
 
