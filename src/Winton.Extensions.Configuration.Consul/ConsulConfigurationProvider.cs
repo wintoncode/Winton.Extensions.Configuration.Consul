@@ -45,17 +45,14 @@ namespace Winton.Extensions.Configuration.Consul
 
         public void Dispose()
         {
-            lock (this)
+            if (_disposed)
             {
-                if (_disposed)
-                {
-                    return;
-                }
-
-                _cancellationTokenSource.Cancel();
-                _cancellationTokenSource.Dispose();
-                _disposed = true;
+                return;
             }
+
+            _cancellationTokenSource.Cancel();
+            _cancellationTokenSource.Dispose();
+            _disposed = true;
         }
 
         public override void Load()
