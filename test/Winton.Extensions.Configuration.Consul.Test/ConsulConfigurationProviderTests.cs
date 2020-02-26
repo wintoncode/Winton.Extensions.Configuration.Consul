@@ -112,6 +112,23 @@ namespace Winton.Extensions.Configuration.Consul
                     kv => kv.List("Test", It.IsAny<QueryOptions>(), It.IsAny<CancellationToken>()),
                     Times.Between(expectedKvCalls, expectedKvCalls + 1, Range.Inclusive));
             }
+
+            [Fact]
+            private void ShouldNotThrowOnMultipleDisposeCalls()
+            {
+                _source.ReloadOnChange = true;
+                _source.Optional = true;
+                _kvEndpoint
+                    .Setup(kv => kv.List("Test", It.IsAny<QueryOptions>(), It.IsAny<CancellationToken>()))
+                    .ReturnsAsync(new QueryResult<KVPair[]> { StatusCode = HttpStatusCode.OK });
+
+                _provider.Load();
+                _provider.Dispose();
+
+                var secondDispose = _provider.Invoking(p => p.Dispose());
+
+                secondDispose.Should().NotThrow();
+            }
         }
 
         public sealed class DoNotReloadOnChange : ConsulConfigurationProviderTests
