@@ -1,6 +1,7 @@
 using System.Collections.Generic;
 using System.IO;
 using System.Net;
+using System.Text;
 using Consul;
 using FluentAssertions;
 using Moq;
@@ -251,6 +252,43 @@ namespace Winton.Extensions.Configuration.Consul.Extensions
                 var config = result.ToConfigDictionary("path", _parser.Object);
 
                 config.Should().Contain(new KeyValuePair<string, string>("test:Key", "Value"));
+            }
+        }
+
+        public class ToConfigDictionaryWithKeyValueRewriter : KVPairQueryResultExtensionsTests
+        {
+            private readonly IConfigurationParser _parser;
+
+            public ToConfigDictionaryWithKeyValueRewriter()
+            {
+                _parser = new SimpleRewritingConfigurationParser();
+            }
+
+            [Fact]
+            public void ShouldRewriteKeys()
+            {
+                var result = new QueryResult<KVPair[]>
+                {
+                    Response = new[]
+                    {
+                        new KVPair("path/keyWithoutUnderscores") { Value = Encoding.UTF8.GetBytes("value1") },
+                        new KVPair("path/key__with__underscores") { Value = Encoding.UTF8.GetBytes("value2") }
+                    },
+                    StatusCode = HttpStatusCode.OK
+                };
+
+                var config = result.ToConfigDictionary("path", _parser);
+
+                config.Should().Contain(new KeyValuePair<string, string>("keyWithoutUnderscores", "value1"));
+                config.Should().Contain(new KeyValuePair<string, string>("key:with:underscores", "value2"));
+            }
+
+            public class SimpleRewritingConfigurationParser : SimpleConfigurationParser, IConfigurationKeyValueRewriter
+            {
+                public KeyValuePair<string, string> Rewrite(KeyValuePair<string, string> pair)
+                {
+                    return new KeyValuePair<string, string>(pair.Key.Replace("__", ":"), pair.Value);
+                }
             }
         }
     }

@@ -10,7 +10,7 @@ namespace Winton.Extensions.Configuration.Consul.Parsers
     /// <summary>
     ///     Implementation of <see cref="IConfigurationParser" /> for parsing simple values.
     /// </summary>
-    public sealed class SimpleConfigurationParser : IConfigurationParser
+    public class SimpleConfigurationParser : IConfigurationParser
     {
         /// <inheritdoc />
         public IDictionary<string, string> Parse(Stream stream)

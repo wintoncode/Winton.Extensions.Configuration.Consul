@@ -31,7 +31,13 @@ namespace Winton.Extensions.Configuration.Consul.Extensions
                                 "The key must not be null or empty. Ensure that there is at least one key under the root of the config or that the data there contains more than just a single value.");
                         }
 
-                        return new KeyValuePair<string, string>(key, pair.Value);
+                        var configPair = new KeyValuePair<string, string>(key, pair.Value);
+                        if (parser is IConfigurationKeyValueRewriter rewriter)
+                        {
+                            configPair = rewriter.Rewrite(configPair);
+                        }
+
+                        return configPair;
                     });
         }
 
