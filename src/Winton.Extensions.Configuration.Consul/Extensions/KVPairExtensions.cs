@@ -17,28 +17,42 @@ namespace Winton.Extensions.Configuration.Consul.Extensions
             IConfigurationParser parser)
         {
             using Stream stream = new MemoryStream(kvPair.Value);
+            var baseKey = kvPair.Key;
             return parser
                 .Parse(stream)
-                .Select(
-                    pair =>
-                    {
-                        var key = $"{kvPair.Key.RemoveStart(keyToRemove).TrimEnd('/')}:{pair.Key}"
-                            .Replace('/', ':')
-                            .Trim(':');
-                        if (string.IsNullOrEmpty(key))
-                        {
-                            throw new InvalidKeyPairException(
-                                "The key must not be null or empty. Ensure that there is at least one key under the root of the config or that the data there contains more than just a single value.");
-                        }
+                .Select(pair => pair.NormalizeKey(kvPair.Key))
+                .Select(pair => pair.RewriteIfNeeded(parser))
+                .Select(pair => pair.RemoveKeyPrefix(keyToRemove));
+        }
 
-                        var configPair = new KeyValuePair<string, string>(key, pair.Value);
-                        if (parser is IConfigurationKeyValueRewriter rewriter)
-                        {
-                            configPair = rewriter.Rewrite(configPair);
-                        }
+        internal static string NormalizeAsConfigKey(this string rawKey)
+        {
+            return rawKey.Replace('/', ':').Trim(':');
+        }
 
-                        return configPair;
-                    });
+        internal static KeyValuePair<string, string> NormalizeKey(this KeyValuePair<string, string> pair, string baseKey = "")
+        {
+            var normalizedKey = $"{baseKey.TrimEnd('/')}/{pair.Key}".NormalizeAsConfigKey();
+
+            return new KeyValuePair<string, string>(normalizedKey, pair.Value);
+        }
+
+        internal static KeyValuePair<string, string> RewriteIfNeeded(this KeyValuePair<string, string> pair, IConfigurationParser parser)
+        {
+            return parser is IConfigurationKeyValueRewriter rewriter ? rewriter.Rewrite(pair) : pair;
+        }
+
+        internal static KeyValuePair<string, string> RemoveKeyPrefix(this KeyValuePair<string, string> pair, string keyToRemove = "")
+        {
+            string cleanedKey = pair.Key.RemoveStart(keyToRemove.NormalizeAsConfigKey()).Trim(':');
+
+            if (string.IsNullOrEmpty(cleanedKey))
+            {
+                throw new InvalidKeyPairException(
+                    "The key must not be null or empty. Ensure that there is at least one key under the root of the config or that the data there contains more than just a single value.");
+            }
+
+            return new KeyValuePair<string, string>(cleanedKey, pair.Value);
         }
 
         internal static bool HasValue(this KVPair kvPair)
