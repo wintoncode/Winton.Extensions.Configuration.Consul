@@ -2,9 +2,11 @@
 // Licensed under the Apache License, Version 2.0. See LICENSE in the project root for license information.
 
 using System;
+using System.Collections.Generic;
 using System.Net.Http;
 using Consul;
 using Microsoft.Extensions.Configuration;
+using Winton.Extensions.Configuration.Consul.Extensions;
 using Winton.Extensions.Configuration.Consul.Parsers;
 
 namespace Winton.Extensions.Configuration.Consul
@@ -22,6 +24,7 @@ namespace Winton.Extensions.Configuration.Consul
 
             Key = key;
             Parser = new JsonConfigurationParser();
+            ConvertToConfig = DefaultConvertToConfigStrategy;
         }
 
         public Action<ConsulClientConfiguration>? ConsulConfigurationOptions { get; set; }
@@ -37,6 +40,8 @@ namespace Winton.Extensions.Configuration.Consul
             get => _keyToRemove ?? Key;
             set => _keyToRemove = value;
         }
+
+        public Func<KVPair, IEnumerable<KeyValuePair<string, string>>> ConvertToConfig { get; set; }
 
         public Action<ConsulLoadExceptionContext>? OnLoadException { get; set; }
 
@@ -54,6 +59,11 @@ namespace Winton.Extensions.Configuration.Consul
         {
             var consulClientFactory = new ConsulClientFactory(this);
             return new ConsulConfigurationProvider(this, consulClientFactory);
+        }
+
+        private IEnumerable<KeyValuePair<string, string>> DefaultConvertToConfigStrategy(KVPair consulKvPair)
+        {
+            return consulKvPair.ConvertToConfig(this.KeyToRemove, this.Parser);
         }
     }
 }

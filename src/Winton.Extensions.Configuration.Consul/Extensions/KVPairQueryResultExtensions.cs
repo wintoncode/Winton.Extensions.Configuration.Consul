@@ -22,12 +22,11 @@ namespace Winton.Extensions.Configuration.Consul.Extensions
 
         internal static Dictionary<string, string> ToConfigDictionary(
             this QueryResult<KVPair[]> result,
-            string keyToRemove,
-            IConfigurationParser parser)
+            Func<KVPair, IEnumerable<KeyValuePair<string, string>>> convertToConfig)
         {
             return (result.Response ?? new KVPair[0])
                 .Where(kvp => kvp.HasValue())
-                .SelectMany(kvp => kvp.ConvertToConfig(keyToRemove, parser))
+                .SelectMany(convertToConfig)
                 .ToDictionary(kvp => kvp.Key, kvp => kvp.Value, StringComparer.OrdinalIgnoreCase);
         }
     }

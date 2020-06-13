@@ -165,10 +165,15 @@ namespace Winton.Extensions.Configuration.Consul.Extensions
         public class ToConfigDictionary : KVPairQueryResultExtensionsTests
         {
             private readonly Mock<IConfigurationParser> _parser;
+            private readonly IConsulConfigurationSource _source;
 
             public ToConfigDictionary()
             {
                 _parser = new Mock<IConfigurationParser>(MockBehavior.Strict);
+                _source = new ConsulConfigurationSource("key")
+                {
+                    Parser = _parser.Object
+                };
             }
 
             [Fact]
@@ -181,8 +186,9 @@ namespace Winton.Extensions.Configuration.Consul.Extensions
                 _parser
                     .Setup(p => p.Parse(It.IsAny<Stream>()))
                     .Returns(new Dictionary<string, string> { { "key", "value" } });
+                _source.KeyToRemove = "test/path";
 
-                var config = result.ToConfigDictionary("test/path", _parser.Object);
+                var config = result.ToConfigDictionary(_source.ConvertToConfig);
 
                 config.Should().BeEmpty();
             }
@@ -201,8 +207,9 @@ namespace Winton.Extensions.Configuration.Consul.Extensions
                 _parser
                     .Setup(p => p.Parse(It.IsAny<Stream>()))
                     .Returns(new Dictionary<string, string>());
+                _source.KeyToRemove = "path/test";
 
-                result.ToConfigDictionary("path/test", _parser.Object);
+                var config = result.ToConfigDictionary(_source.ConvertToConfig);
 
                 _parser.Verify(cp => cp.Parse(It.IsAny<MemoryStream>()), Times.Never);
             }
@@ -225,10 +232,9 @@ namespace Winton.Extensions.Configuration.Consul.Extensions
                 _parser
                     .Setup(p => p.Parse(It.IsAny<Stream>()))
                     .Returns(new Dictionary<string, string> { { "kEy", "value" } });
+                _source.KeyToRemove = "path/test";
 
-                var config = result.ToConfigDictionary(
-                    "path/test",
-                    _parser.Object);
+                var config = result.ToConfigDictionary(_source.ConvertToConfig);
 
                 config.Should().ContainKey(key);
             }
@@ -247,8 +253,9 @@ namespace Winton.Extensions.Configuration.Consul.Extensions
                 _parser
                     .Setup(p => p.Parse(It.IsAny<Stream>()))
                     .Returns(new Dictionary<string, string> { { "Key", "Value" } });
+                _source.KeyToRemove = "path";
 
-                var config = result.ToConfigDictionary("path", _parser.Object);
+                var config = result.ToConfigDictionary(_source.ConvertToConfig);
 
                 config.Should().Contain(new KeyValuePair<string, string>("test:Key", "Value"));
             }

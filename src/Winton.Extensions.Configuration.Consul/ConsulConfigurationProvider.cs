@@ -156,7 +156,7 @@ namespace Winton.Extensions.Configuration.Consul
 
         private void SetData(QueryResult<KVPair[]> result)
         {
-            Data = result.ToConfigDictionary(_source.KeyToRemove, _source.Parser);
+            Data = result.ToConfigDictionary(_source.ConvertToConfig);
         }
 
         private void SetLastIndex(QueryResult result)

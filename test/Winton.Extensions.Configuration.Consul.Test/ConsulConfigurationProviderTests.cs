@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Net;
+using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
 using Consul;
@@ -672,6 +673,96 @@ namespace Winton.Extensions.Configuration.Consul
                 _kvEndpoint.Verify(
                     kv => kv.List("Test", It.IsAny<QueryOptions>(), It.IsAny<CancellationToken>()),
                     Times.Exactly(2));
+            }
+        }
+
+        public sealed class CustomizeConvertToConfig : ConsulConfigurationProviderTests
+        {
+            public CustomizeConvertToConfig()
+            {
+                _source.ReloadOnChange = false;
+            }
+
+            [Fact]
+            private void ShouldSetData()
+            {
+                _parser
+                  .Setup(cp => cp.Parse(It.IsAny<MemoryStream>()))
+                  .Throws(new Exception("Should not get here..."));
+                _kvEndpoint
+                    .Setup(kv => kv.List("Test", It.IsAny<QueryOptions>(), It.IsAny<CancellationToken>()))
+                    .ReturnsAsync(
+                        new QueryResult<KVPair[]>
+                        {
+                            Response = new[]
+                            {
+                                new KVPair("Test/key__with__double__underscores") { Value = Encoding.UTF8.GetBytes("Value") }
+                            },
+                            StatusCode = HttpStatusCode.OK
+                        });
+
+                _source.ConvertToConfig = kvPair =>
+                {
+                    var normalizedKey = kvPair.Key
+                      .Replace("__", ":")
+                      .Replace(_source.KeyToRemove, string.Empty)
+                      .Trim('/');
+
+                    using Stream valueStream = new MemoryStream(kvPair.Value);
+                    using var streamReader = new StreamReader(valueStream);
+                    var parsedValue = streamReader.ReadToEnd();
+
+                    return new Dictionary<string, string>()
+                    {
+                        { normalizedKey, parsedValue }
+                    };
+                };
+
+                _provider.Load();
+
+                _provider.TryGet("key:with:double:underscores", out var value);
+                value.Should().Be("Value");
+            }
+
+            [Fact]
+            private void ShouldSetDataUsingDefinedParser()
+            {
+                _parser
+                  .Setup(cp => cp.Parse(It.IsAny<MemoryStream>()))
+                  .Returns(new Dictionary<string, string> { { string.Empty, "Value" } });
+                _kvEndpoint
+                    .Setup(kv => kv.List("Test", It.IsAny<QueryOptions>(), It.IsAny<CancellationToken>()))
+                    .ReturnsAsync(
+                        new QueryResult<KVPair[]>
+                        {
+                            Response = new[]
+                            {
+                                new KVPair("Test/key__with__double__underscores") { Value = Encoding.UTF8.GetBytes("Value") }
+                            },
+                            StatusCode = HttpStatusCode.OK
+                        });
+
+                _source.ConvertToConfig = kvPair =>
+                {
+                    var normalizedKey = kvPair.Key
+                      .Replace("__", ":")
+                      .Replace(_source.KeyToRemove, string.Empty)
+                      .Trim('/');
+
+                    using Stream valueStream = new MemoryStream(kvPair.Value);
+                    var parsedPairs = _source.Parser.Parse(valueStream);
+                    return parsedPairs.Select(parsedPair =>
+                    {
+                        return new KeyValuePair<string, string>(
+                                                $"{normalizedKey}/{parsedPair.Key}".Trim('/'),
+                                                parsedPair.Value);
+                    });
+                };
+
+                _provider.Load();
+
+                _provider.TryGet("key:with:double:underscores", out var value);
+                value.Should().Be("Value");
             }
         }
     }
