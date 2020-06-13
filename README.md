@@ -7,6 +7,16 @@
 
 Adds support for configuring .NET Core applications using Consul. Works great with [git2consul](https://github.com/Cimpress-MCP/git2consul).
 
+- [Installation](#installation)
+- [Usage](#usage)
+    - [Minimal Setup](#minimal-setup)
+    - [Options](#options)
+- [Configure Parsing Options](#configure-parsing-options)
+    - [Consul values are JSON](#consul-values-are-json)
+    - [Consul values are scalars](#consul-values-are-scalars)
+    - [Consul values are a mix of JSON and scalars](#consul-values-are-a-mix-of-json-and-scalars)
+    - [Customizing the `ConvertToConfig` strategy](#customizing-the-converttoconfig-strategy)
+
 ## Installation
 
 Add `Winton.Extensions.Configuration.Consul` to your project's dependencies, either via the NuGet package manager or as a `PackageReference` in the csproj file.
@@ -70,7 +80,18 @@ Assuming the application is running in the 'Development' environment and the app
    A `bool` indicating whether to reload the config when it changes in Consul.
    If `true` it will watch the configured key for changes. When a change occurs the config will be asynchronously reloaded and the `IChangeToken` will be triggered to signal that the config has been reloaded. Defaults to `false`.
 
-## Storing Config as Expanded Keys In Consul
+* **`ConvertToConfig`**
+
+   A `Func<KVPair, IEnumerable<KeyValuePair<string, string>>>` which gives you complete control over the parsing of fully qualified consul keys and raw consul values; the default implementation will:
+
+   - Use the configured `Parser` to parse consul values
+   - Remove the configured `KeyToRemove` prefix from consul keys
+
+   When setting this member, however, you bypass the default key and value processing and `Parser` and `KeyToRemove` have no effect unless your `ConvertToConfig` function uses them.
+
+## Configure Parsing Options
+
+### Consul values are JSON
 
 By default this configuration provider will load all key-value pairs from Consul under the specified root key, but by default it assumes that the values of the leaf keys are encoded as JSON.
 
@@ -101,6 +122,8 @@ var configuration = builder
 ```
 
 The resultant configuration would contain sections for `auth` and `logging`. As a concrete example `configuration.GetValue<string>("logging:level")` would return `"warn"` and `configuration.GetValue<string>("auth:claims:0")` would return `"email"`.
+
+### Consul values are scalars
 
 Sometimes however, config in Consul is stored as a set of expanded keys. For instance, tools such as `consul-cli` load config in this format.
 
@@ -135,6 +158,8 @@ builder
 
 The `SimpleConfigurationParser` expects to encounter a scalar value at each leaf key in the tree.
 
+### Consul values are a mix of JSON and scalars
+
 If you need to support both expanded keys and JSON values then this can be achieved by putting them under different root keys and adding multiple configuration sources. For example:
 
 ```csharp
@@ -147,3 +172,35 @@ builder
         })
     .AddConsul("myApp/jsonValues", cancellationToken);
 ```
+
+### Customizing the `ConvertToConfig` strategy
+
+Sometimes you may need more control over the conversion of raw consul KV pairs into `IConfiguration` data.  In this case you can set a custom `ConvertToConfig` function:
+
+```csharp
+builder
+    .AddConsul(
+        "myApp",
+        options =>
+        {
+            options.ConvertToConfig = kvPair =>
+            {
+                var normalizedKey = kvPair.Key
+                    .Replace(_source.KeyToRemove, string.Empty)
+                    .Replace("__", "/")
+                    .Replace("/", ":")
+                    .Trim('/');
+
+                using Stream valueStream = new MemoryStream(kvPair.Value);
+                using var streamReader = new StreamReader(valueStream);
+                var parsedValue = streamReader.ReadToEnd();
+
+                return new Dictionary<string, string>()
+                {
+                    { normalizedKey, parsedValue }
+                };
+            };
+        });
+```
+
+> :warning: Caution: by customizing this `ConvertToConfig` strategy you bypass any automatic invocation of the configured `Parser` and `KeyToRemove` so it becomes your responsibility to use them as needed by your scenario.
