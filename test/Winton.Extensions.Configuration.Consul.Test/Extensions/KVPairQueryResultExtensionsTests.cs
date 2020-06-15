@@ -1,4 +1,5 @@
 using System.Collections.Generic;
+using System.Configuration;
 using System.IO;
 using System.Net;
 using Consul;
@@ -164,18 +165,6 @@ namespace Winton.Extensions.Configuration.Consul.Extensions
 
         public class ToConfigDictionary : KVPairQueryResultExtensionsTests
         {
-            private readonly Mock<IConfigurationParser> _parser;
-            private readonly IConsulConfigurationSource _source;
-
-            public ToConfigDictionary()
-            {
-                _parser = new Mock<IConfigurationParser>(MockBehavior.Strict);
-                _source = new ConsulConfigurationSource("key")
-                {
-                    Parser = _parser.Object
-                };
-            }
-
             [Fact]
             private void ShouldBeEmptyIfResponseIsNull()
             {
@@ -183,12 +172,8 @@ namespace Winton.Extensions.Configuration.Consul.Extensions
                 {
                     StatusCode = HttpStatusCode.OK
                 };
-                _parser
-                    .Setup(p => p.Parse(It.IsAny<Stream>()))
-                    .Returns(new Dictionary<string, string> { { "key", "value" } });
-                _source.KeyToRemove = "test/path";
 
-                var config = result.ToConfigDictionary(_source.ConvertConsulKVPairToConfig);
+                var config = result.ToConfigDictionary(_ => new Dictionary<string, string> { { "key", "value" } });
 
                 config.Should().BeEmpty();
             }
@@ -200,18 +185,14 @@ namespace Winton.Extensions.Configuration.Consul.Extensions
                 {
                     Response = new[]
                     {
-               new KVPair("path/test") { Value = new List<byte>().ToArray() }
-            },
+                        new KVPair("path/test") { Value = new List<byte>().ToArray() }
+                    },
                     StatusCode = HttpStatusCode.OK
                 };
-                _parser
-                    .Setup(p => p.Parse(It.IsAny<Stream>()))
-                    .Returns(new Dictionary<string, string>());
-                _source.KeyToRemove = "path/test";
 
-                var config = result.ToConfigDictionary(_source.ConvertConsulKVPairToConfig);
+                var config = result.ToConfigDictionary(_ => new Dictionary<string, string> { { "key", "value" } });
 
-                _parser.Verify(cp => cp.Parse(It.IsAny<MemoryStream>()), Times.Never);
+                config.Should().BeEmpty();
             }
 
             [Theory]
@@ -225,39 +206,14 @@ namespace Winton.Extensions.Configuration.Consul.Extensions
                 {
                     Response = new[]
                     {
-              new KVPair("path/test") { Value = new List<byte> { 1 }.ToArray() }
-            },
+                        new KVPair("path/test") { Value = new List<byte> { 1 }.ToArray() }
+                    },
                     StatusCode = HttpStatusCode.OK
                 };
-                _parser
-                    .Setup(p => p.Parse(It.IsAny<Stream>()))
-                    .Returns(new Dictionary<string, string> { { "kEy", "value" } });
-                _source.KeyToRemove = "path/test";
 
-                var config = result.ToConfigDictionary(_source.ConvertConsulKVPairToConfig);
+                var config = result.ToConfigDictionary(_ => new Dictionary<string, string> { { "kEy", "value" } });
 
                 config.Should().ContainKey(key);
-            }
-
-            [Fact]
-            private void ShouldRemoveSpecifiedKeySection()
-            {
-                var result = new QueryResult<KVPair[]>
-                {
-                    Response = new[]
-                    {
-              new KVPair("path/test") { Value = new List<byte> { 1 }.ToArray() }
-            },
-                    StatusCode = HttpStatusCode.OK
-                };
-                _parser
-                    .Setup(p => p.Parse(It.IsAny<Stream>()))
-                    .Returns(new Dictionary<string, string> { { "Key", "Value" } });
-                _source.KeyToRemove = "path";
-
-                var config = result.ToConfigDictionary(_source.ConvertConsulKVPairToConfig);
-
-                config.Should().Contain(new KeyValuePair<string, string>("test:Key", "Value"));
             }
         }
     }
