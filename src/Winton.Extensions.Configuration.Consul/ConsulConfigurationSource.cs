@@ -24,7 +24,7 @@ namespace Winton.Extensions.Configuration.Consul
 
             Key = key;
             Parser = new JsonConfigurationParser();
-            ConvertToConfig = DefaultConvertToConfigStrategy;
+            ConvertConsulKVPairToConfig = DefaultConvertConsulKVPairToConfigStrategy;
         }
 
         public Action<ConsulClientConfiguration>? ConsulConfigurationOptions { get; set; }
@@ -41,7 +41,7 @@ namespace Winton.Extensions.Configuration.Consul
             set => _keyToRemove = value;
         }
 
-        public Func<KVPair, IEnumerable<KeyValuePair<string, string>>> ConvertToConfig { get; set; }
+        public Func<KVPair, IEnumerable<KeyValuePair<string, string>>> ConvertConsulKVPairToConfig { get; set; }
 
         public Action<ConsulLoadExceptionContext>? OnLoadException { get; set; }
 
@@ -61,7 +61,7 @@ namespace Winton.Extensions.Configuration.Consul
             return new ConsulConfigurationProvider(this, consulClientFactory);
         }
 
-        private IEnumerable<KeyValuePair<string, string>> DefaultConvertToConfigStrategy(KVPair consulKvPair)
+        private IEnumerable<KeyValuePair<string, string>> DefaultConvertConsulKVPairToConfigStrategy(KVPair consulKvPair)
         {
             return consulKvPair.ConvertToConfig(this.KeyToRemove, this.Parser);
         }

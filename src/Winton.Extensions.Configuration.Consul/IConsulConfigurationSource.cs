@@ -30,7 +30,7 @@ namespace Winton.Extensions.Configuration.Consul
         ///     the <see cref="KeyToRemove"/> portion of the Consul Key and then apply the
         ///     configured <see cref="Parser"/> to parse the Consul value.
         /// </summary>
-        Func<KVPair, IEnumerable<KeyValuePair<string, string>>> ConvertToConfig { get; set; }
+        Func<KVPair, IEnumerable<KeyValuePair<string, string>>> ConvertConsulKVPairToConfig { get; set; }
 
         /// <summary>
         ///     Gets or sets an <see cref="Action" /> to be applied to the <see cref="HttpClientHandler" />

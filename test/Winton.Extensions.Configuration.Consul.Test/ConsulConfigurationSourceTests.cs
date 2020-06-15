@@ -66,13 +66,13 @@ namespace Winton.Extensions.Configuration.Consul
             }
 
             [Fact]
-            private void ShoulSetDefaultConvertToConfigStrategy()
+            private void ShoulSetDefaultConvertConsulKVPairToConfigStrategy()
             {
                 var source = new ConsulConfigurationSource("Key");
 
                 var consulKVPair = new KVPair("key") { Value = Encoding.UTF8.GetBytes("{\"a\": \"b\", \"c\": \"d\"}") };
 
-                var result = source.ConvertToConfig(consulKVPair);
+                var result = source.ConvertConsulKVPairToConfig(consulKVPair);
                 result.Should()
                     .NotBeEmpty()
                     .And.HaveCount(2)

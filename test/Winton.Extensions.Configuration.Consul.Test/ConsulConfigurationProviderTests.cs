@@ -676,9 +676,9 @@ namespace Winton.Extensions.Configuration.Consul
             }
         }
 
-        public sealed class CustomizeConvertToConfig : ConsulConfigurationProviderTests
+        public sealed class CustomizeConvertConsulKVPairToConfig : ConsulConfigurationProviderTests
         {
-            public CustomizeConvertToConfig()
+            public CustomizeConvertConsulKVPairToConfig()
             {
                 _source.ReloadOnChange = false;
             }
@@ -701,7 +701,7 @@ namespace Winton.Extensions.Configuration.Consul
                             StatusCode = HttpStatusCode.OK
                         });
 
-                _source.ConvertToConfig = kvPair =>
+                _source.ConvertConsulKVPairToConfig = kvPair =>
                 {
                     var normalizedKey = kvPair.Key
                       .Replace("__", ":")
@@ -742,7 +742,7 @@ namespace Winton.Extensions.Configuration.Consul
                             StatusCode = HttpStatusCode.OK
                         });
 
-                _source.ConvertToConfig = kvPair =>
+                _source.ConvertConsulKVPairToConfig = kvPair =>
                 {
                     var normalizedKey = kvPair.Key
                       .Replace("__", ":")

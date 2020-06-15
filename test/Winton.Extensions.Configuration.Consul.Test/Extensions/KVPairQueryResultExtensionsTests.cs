@@ -188,7 +188,7 @@ namespace Winton.Extensions.Configuration.Consul.Extensions
                     .Returns(new Dictionary<string, string> { { "key", "value" } });
                 _source.KeyToRemove = "test/path";
 
-                var config = result.ToConfigDictionary(_source.ConvertToConfig);
+                var config = result.ToConfigDictionary(_source.ConvertConsulKVPairToConfig);
 
                 config.Should().BeEmpty();
             }
@@ -200,8 +200,8 @@ namespace Winton.Extensions.Configuration.Consul.Extensions
                 {
                     Response = new[]
                     {
-                        new KVPair("path/test") { Value = new List<byte>().ToArray() }
-                    },
+               new KVPair("path/test") { Value = new List<byte>().ToArray() }
+            },
                     StatusCode = HttpStatusCode.OK
                 };
                 _parser
@@ -209,7 +209,7 @@ namespace Winton.Extensions.Configuration.Consul.Extensions
                     .Returns(new Dictionary<string, string>());
                 _source.KeyToRemove = "path/test";
 
-                var config = result.ToConfigDictionary(_source.ConvertToConfig);
+                var config = result.ToConfigDictionary(_source.ConvertConsulKVPairToConfig);
 
                 _parser.Verify(cp => cp.Parse(It.IsAny<MemoryStream>()), Times.Never);
             }
@@ -225,8 +225,8 @@ namespace Winton.Extensions.Configuration.Consul.Extensions
                 {
                     Response = new[]
                     {
-                        new KVPair("path/test") { Value = new List<byte> { 1 }.ToArray() }
-                    },
+              new KVPair("path/test") { Value = new List<byte> { 1 }.ToArray() }
+            },
                     StatusCode = HttpStatusCode.OK
                 };
                 _parser
@@ -234,7 +234,7 @@ namespace Winton.Extensions.Configuration.Consul.Extensions
                     .Returns(new Dictionary<string, string> { { "kEy", "value" } });
                 _source.KeyToRemove = "path/test";
 
-                var config = result.ToConfigDictionary(_source.ConvertToConfig);
+                var config = result.ToConfigDictionary(_source.ConvertConsulKVPairToConfig);
 
                 config.Should().ContainKey(key);
             }
@@ -246,8 +246,8 @@ namespace Winton.Extensions.Configuration.Consul.Extensions
                 {
                     Response = new[]
                     {
-                        new KVPair("path/test") { Value = new List<byte> { 1 }.ToArray() }
-                    },
+              new KVPair("path/test") { Value = new List<byte> { 1 }.ToArray() }
+            },
                     StatusCode = HttpStatusCode.OK
                 };
                 _parser
@@ -255,7 +255,7 @@ namespace Winton.Extensions.Configuration.Consul.Extensions
                     .Returns(new Dictionary<string, string> { { "Key", "Value" } });
                 _source.KeyToRemove = "path";
 
-                var config = result.ToConfigDictionary(_source.ConvertToConfig);
+                var config = result.ToConfigDictionary(_source.ConvertConsulKVPairToConfig);
 
                 config.Should().Contain(new KeyValuePair<string, string>("test:Key", "Value"));
             }

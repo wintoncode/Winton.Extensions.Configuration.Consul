@@ -15,7 +15,7 @@ Adds support for configuring .NET Core applications using Consul. Works great wi
     - [Consul values are JSON](#consul-values-are-json)
     - [Consul values are scalars](#consul-values-are-scalars)
     - [Consul values are a mix of JSON and scalars](#consul-values-are-a-mix-of-json-and-scalars)
-    - [Customizing the `ConvertToConfig` strategy](#customizing-the-converttoconfig-strategy)
+    - [Customizing the `ConvertConsulKVPairToConfig` strategy](#customizing-the-ConvertConsulKVPairToConfig-strategy)
 
 ## Installation
 
@@ -80,14 +80,14 @@ Assuming the application is running in the 'Development' environment and the app
    A `bool` indicating whether to reload the config when it changes in Consul.
    If `true` it will watch the configured key for changes. When a change occurs the config will be asynchronously reloaded and the `IChangeToken` will be triggered to signal that the config has been reloaded. Defaults to `false`.
 
-* **`ConvertToConfig`**
+* **`ConvertConsulKVPairToConfig`**
 
    A `Func<KVPair, IEnumerable<KeyValuePair<string, string>>>` which gives you complete control over the parsing of fully qualified consul keys and raw consul values; the default implementation will:
 
    - Use the configured `Parser` to parse consul values
    - Remove the configured `KeyToRemove` prefix from consul keys
 
-   When setting this member, however, you bypass the default key and value processing and `Parser` and `KeyToRemove` have no effect unless your `ConvertToConfig` function uses them.
+   When setting this member, however, you bypass the default key and value processing and `Parser` and `KeyToRemove` have no effect unless your `ConvertConsulKVPairToConfig` function uses them.
 
 ## Configure Parsing Options
 
@@ -173,9 +173,9 @@ builder
     .AddConsul("myApp/jsonValues", cancellationToken);
 ```
 
-### Customizing the `ConvertToConfig` strategy
+### Customizing the `ConvertConsulKVPairToConfig` strategy
 
-Sometimes you may need more control over the conversion of raw consul KV pairs into `IConfiguration` data.  In this case you can set a custom `ConvertToConfig` function:
+Sometimes you may need more control over the conversion of raw consul KV pairs into `IConfiguration` data.  In this case you can set a custom `ConvertConsulKVPairToConfig` function:
 
 ```csharp
 builder
@@ -183,10 +183,10 @@ builder
         "myApp",
         options =>
         {
-            options.ConvertToConfig = kvPair =>
+            options.ConvertConsulKVPairToConfig = kvPair =>
             {
                 var normalizedKey = kvPair.Key
-                    .Replace(_source.KeyToRemove, string.Empty)
+                    .Replace("base/key", string.Empty)
                     .Replace("__", "/")
                     .Replace("/", ":")
                     .Trim('/');
@@ -203,4 +203,4 @@ builder
         });
 ```
 
-> :warning: Caution: by customizing this `ConvertToConfig` strategy you bypass any automatic invocation of the configured `Parser` and `KeyToRemove` so it becomes your responsibility to use them as needed by your scenario.
+> :warning: Caution: by customizing this `ConvertConsulKVPairToConfig` strategy you bypass any automatic invocation of the configured `Parser` and `KeyToRemove` so it becomes your responsibility to use them as needed by your scenario.
