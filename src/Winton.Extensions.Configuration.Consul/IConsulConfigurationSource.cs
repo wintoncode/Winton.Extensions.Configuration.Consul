@@ -2,6 +2,7 @@
 // Licensed under the Apache License, Version 2.0. See LICENSE in the project root for license information.
 
 using System;
+using System.Collections.Generic;
 using System.Net.Http;
 using System.Threading;
 using Consul;
@@ -22,6 +23,19 @@ namespace Winton.Extensions.Configuration.Consul
         ///     Allows the default config options for Consul to be overriden.
         /// </summary>
         Action<ConsulClientConfiguration>? ConsulConfigurationOptions { get; set; }
+
+        /// <summary>
+        ///     Gets or sets a function taking a Consul <see cref="KVPair"/> to one or more key/value
+        ///     pairs which are injected into the Microsoft <see cref="IConfiguration"/> system.
+        /// </summary>
+        /// <remarks>
+        ///     The default ConvertConsulKVPairToConfig strategy is to remove the
+        ///     <see cref="KeyToRemove"/> portion of the Consul Key and then apply the configured
+        ///     <see cref="Parser"/> to parse the Consul value.  Note that if you customize this strategy
+        ///     there are some requirements on the final format of
+        ///     <see href="https://docs.microsoft.com/en-us/aspnet/core/fundamentals/configuration/?view=aspnetcore-3.1#configuration-keys-and-values">Configuration Keys and Values</see>.
+        /// </remarks>
+        Func<KVPair, IEnumerable<KeyValuePair<string, string>>> ConvertConsulKVPairToConfig { get; set; }
 
         /// <summary>
         ///     Gets or sets an <see cref="Action" /> to be applied to the <see cref="HttpClientHandler" />

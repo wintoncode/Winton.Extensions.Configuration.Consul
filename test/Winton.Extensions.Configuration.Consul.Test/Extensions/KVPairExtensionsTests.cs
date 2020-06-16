@@ -11,16 +11,16 @@ namespace Winton.Extensions.Configuration.Consul.Extensions
 {
     public class KVPairExtensionsTests
     {
-        public sealed class ConvertToConfig : KVPairExtensionsTests
+        public sealed class ConvertConsulKVPairToConfig : KVPairExtensionsTests
         {
             private readonly Mock<IConfigurationParser> _parserMock;
 
-            public ConvertToConfig()
+            public ConvertConsulKVPairToConfig()
             {
                 _parserMock = new Mock<IConfigurationParser>(MockBehavior.Strict);
             }
 
-            public static IEnumerable<object[]> ConvertToConfigTestCases => new List<object[]>
+            public static IEnumerable<object[]> ConvertConsulKVPairToConfigTestCases => new List<object[]>
             {
                 new object[]
                 {
@@ -136,7 +136,7 @@ namespace Winton.Extensions.Configuration.Consul.Extensions
             };
 
             [Theory]
-            [MemberData(nameof(ConvertToConfigTestCases))]
+            [MemberData(nameof(ConvertConsulKVPairToConfigTestCases))]
             private void ShouldConvertKVPairToConfigCorrectly(
                 string rootKey,
                 string kvPairKey,

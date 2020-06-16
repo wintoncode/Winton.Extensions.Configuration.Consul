@@ -1,4 +1,8 @@
 using System;
+using System.Collections.Generic;
+using System.Linq;
+using System.Text;
+using Consul;
 using FluentAssertions;
 using Winton.Extensions.Configuration.Consul.Parsers;
 using Xunit;
@@ -59,6 +63,18 @@ namespace Winton.Extensions.Configuration.Consul
                 Action constructing = () => new ConsulConfigurationSource(key);
 
                 constructing.Should().Throw<ArgumentNullException>().And.Message.Should().Contain("key");
+            }
+
+            [Fact]
+            private void ShoulSetDefaultConvertConsulKVPairToConfigStrategy()
+            {
+                var source = new ConsulConfigurationSource("Key");
+
+                var consulKVPair = new KVPair("key") { Value = Encoding.UTF8.GetBytes("{\"a\": \"b\", \"c\": \"d\"}") };
+
+                var result = source.ConvertConsulKVPairToConfig(consulKVPair);
+                result.Should()
+                    .BeEquivalentTo(new Dictionary<string, string> { { "key:a", "b" }, { "key:c", "d" } });
             }
         }
     }
