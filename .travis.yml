@@ -8,11 +8,10 @@ env:
   global:
     - DOTNET_SKIP_FIRST_TIME_EXPERIENCE: true
     - DOTNET_CLI_TELEMETRY_OPTOUT: 1
-matrix:
+jobs:
   include:
     - os: linux
       dist: bionic
-      sudo: required
       dotnet: 3.0
     - os: osx 
       osx_image: xcode11.2
@@ -22,7 +21,3 @@ matrix:
 script:
   - git fetch --unshallow
   - ./build.sh
-notifications:
-  on_success: always
-  on_failure: always
-  on_start: always

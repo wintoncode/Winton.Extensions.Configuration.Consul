@@ -1,7 +1,7 @@
 # Winton.Extensions.Configuration.Consul
 
-[![Build status](https://ci.appveyor.com/api/projects/status/vlouj9n5ahqsgql9/branch/master?svg=true)](https://ci.appveyor.com/project/wintoncode/winton-extensions-configuration-consul/branch/master)
-[![Travis Build Status](https://travis-ci.org/wintoncode/Winton.Extensions.Configuration.Consul.svg?branch=master)](https://travis-ci.org/wintoncode/Winton.Extensions.Configuration.Consul)
+[![Appveyor](https://ci.appveyor.com/api/projects/status/vlouj9n5ahqsgql9/branch/master?svg=true)](https://ci.appveyor.com/project/wintoncode/winton-extensions-configuration-consul/branch/master)
+[![Travis CI](https://travis-ci.com/wintoncode/Winton.Extensions.Configuration.Consul.svg?branch=master)](https://travis-ci.com/wintoncode/Winton.Extensions.Configuration.Consul)
 [![NuGet version](https://img.shields.io/nuget/v/Winton.Extensions.Configuration.Consul.svg)](https://www.nuget.org/packages/Winton.Extensions.Configuration.Consul)
 [![NuGet version](https://img.shields.io/nuget/vpre/Winton.Extensions.Configuration.Consul.svg)](https://www.nuget.org/packages/Winton.Extensions.Configuration.Consul)
 
