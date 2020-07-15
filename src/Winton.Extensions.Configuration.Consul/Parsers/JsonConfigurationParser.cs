@@ -5,6 +5,7 @@ using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using Microsoft.Extensions.Configuration;
+using Winton.Extensions.Configuration.Consul.Extensions;
 
 namespace Winton.Extensions.Configuration.Consul.Parsers
 {
@@ -18,7 +19,7 @@ namespace Winton.Extensions.Configuration.Consul.Parsers
         public IDictionary<string, string> Parse(Stream stream)
         {
             return new ConfigurationBuilder()
-                .AddJsonStream(stream)
+                .AddJsonArrayStream(stream)
                 .Build()
                 .AsEnumerable()
                 .ToDictionary(pair => pair.Key, pair => pair.Value);
