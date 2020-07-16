@@ -15,11 +15,11 @@ namespace Winton.Extensions.Configuration.Consul.Internals
         private readonly IDictionary<string, string> _data = new SortedDictionary<string, string>(StringComparer.OrdinalIgnoreCase);
         private readonly Stack<string> _context = new Stack<string>();
         private string? _currentPath;
-        private string? _arrayContextPrefix;
+        private string? _dataPrefix;
 
         private JsonConfigurationFileParser(string? prefix = null)
         {
-            _arrayContextPrefix = prefix;
+            _dataPrefix = prefix;
         }
 
         public static IDictionary<string, string> Parse(Stream input)
@@ -74,11 +74,28 @@ namespace Winton.Extensions.Configuration.Consul.Internals
             var prefixIdx = 0;
             foreach (var arrayElement in element.EnumerateArray())
             {
-                foreach (var property in arrayElement.EnumerateObject())
+                switch (arrayElement.ValueKind)
                 {
-                    EnterContext($"{(_arrayContextPrefix is null ? $"{prefixIdx}:" : $"{_arrayContextPrefix}:{prefixIdx}:")}{property.Name}");
-                    VisitValue(property.Value);
-                    ExitContext();
+                    case JsonValueKind.Number:
+                    case JsonValueKind.String:
+                    case JsonValueKind.True:
+                    case JsonValueKind.False:
+                    case JsonValueKind.Null:
+                        EnterContext($"{(_dataPrefix is null ? $"{prefixIdx}" : $"{_dataPrefix}:{prefixIdx}")}");
+                        VisitValue(arrayElement);
+                        ExitContext();
+                        break;
+                    case JsonValueKind.Object:
+                        foreach (var property in arrayElement.EnumerateObject())
+                        {
+                            EnterContext($"{(_dataPrefix is null ? $"{prefixIdx}:" : $"{_dataPrefix}:{prefixIdx}:")}{property.Name}");
+                            VisitValue(property.Value);
+                            ExitContext();
+                        }
+
+                        break;
+                    default:
+                        throw new NotSupportedException();
                 }
 
                 prefixIdx++;
