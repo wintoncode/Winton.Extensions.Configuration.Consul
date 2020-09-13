@@ -22,8 +22,7 @@ namespace Winton.Extensions.Configuration.Consul.Extensions
                 .Select(
                     pair =>
                     {
-                        var key = $"{kvPair.Key.RemoveStart(keyToRemove).TrimEnd('/')}:{pair.Key}"
-                            .Replace('/', ':')
+                        var key = $"{kvPair.Key.RemoveStart(keyToRemove).TrimEnd('/').Replace('/', ':')}:{pair.Key}"
                             .Trim(':');
                         if (string.IsNullOrEmpty(key))
                         {
