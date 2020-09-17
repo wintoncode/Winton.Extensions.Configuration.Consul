@@ -55,7 +55,7 @@ namespace Winton.Extensions.Configuration.Consul.Extensions
                 new object[]
                 {
                     "RootKey/Settings",
-                    "RootKey/Settings/Root",
+                    "RootKey/Settings/Root/",
                     new Dictionary<string, string> { { "Key", "value" } },
                     new[]
                     {
@@ -131,6 +131,16 @@ namespace Winton.Extensions.Configuration.Consul.Extensions
                     new[]
                     {
                         new KeyValuePair<string, string>("Section:Key", "value")
+                    }
+                },
+                new object[]
+                {
+                    string.Empty,
+                    "Root/Section",
+                    new Dictionary<string, string> { { "JsonKey/With/Slash", "value" } },
+                    new[]
+                    {
+                        new KeyValuePair<string, string>("Root:Section:JsonKey/With/Slash", "value")
                     }
                 }
             };
