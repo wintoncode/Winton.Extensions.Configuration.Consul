@@ -6,7 +6,6 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Net;
 using Consul;
-using Winton.Extensions.Configuration.Consul.Parsers;
 
 namespace Winton.Extensions.Configuration.Consul.Extensions
 {
