@@ -53,11 +53,7 @@ jobs:
         with:
           fetch-depth: 0
           submodules: recursive
-      - name: Setup dotnet SDK 3
-        uses: actions/setup-dotnet@v1
-        with:
-          dotnet-version: "3.1.411"
-      - name: Setup dotnet SDK 5 # This gets us net461
+      - name: Setup dotnet SDK
         uses: actions/setup-dotnet@v1
         with:
           dotnet-version: "5.0.300"

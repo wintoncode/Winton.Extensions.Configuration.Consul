@@ -2,7 +2,7 @@
 
   <PropertyGroup>
     <RootNamespace>Winton.Extensions.Configuration.Consul</RootNamespace>
-    <TargetFramework>netcoreapp3.0</TargetFramework>
+    <TargetFramework>net5.0</TargetFramework>
   </PropertyGroup>
   
   <ItemGroup>
