@@ -1,6 +1,6 @@
-FROM mcr.microsoft.com/dotnet/core/aspnet:3.0
+FROM mcr.microsoft.com/dotnet/aspnet:5.0
 
-COPY bin/Release/netcoreapp3.0/publish /app
+COPY bin/Release/net5.0/publish /app
 WORKDIR /app
  
 EXPOSE 80/tcp
