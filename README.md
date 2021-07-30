@@ -1,11 +1,12 @@
 # Winton.Extensions.Configuration.Consul
 
+Adds support for configuring .NET Core applications using Consul. Works great with [git2consul](https://github.com/Cimpress-MCP/git2consul).
+
+[![NuGet Badge](https://buildstats.info/nuget/Winton.Extensions.Configuration.Consul)](https://www.nuget.org/packages/Winton.Extensions.Configuration.Consul/)
+
 [![Build history](https://buildstats.info/github/chart/wintoncode/Winton.Extensions.Configuration.Consul?branch=master)](https://github.com/wintoncode/Winton.Extensions.Configuration.Consul/actions)
 
-[![NuGet version](https://img.shields.io/nuget/v/Winton.Extensions.Configuration.Consul.svg)](https://www.nuget.org/packages/Winton.Extensions.Configuration.Consul)
-[![NuGet version](https://img.shields.io/nuget/vpre/Winton.Extensions.Configuration.Consul.svg)](https://www.nuget.org/packages/Winton.Extensions.Configuration.Consul)
-
-Adds support for configuring .NET Core applications using Consul. Works great with [git2consul](https://github.com/Cimpress-MCP/git2consul).
+## Contents
 
 - [Installation](#installation)
 - [Usage](#usage)
