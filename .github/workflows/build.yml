@@ -91,6 +91,4 @@ jobs:
       with:
         name: packages
     - name: NuGet Push
-      run: |
-        dotnet nuget push **/*.nupkg -s https://api.nuget.org/v3/index.json --api-key ${{ secrets.NUGET_API_KEY }}
-        dotnet nuget push **/*.snupkg -s https://api.nuget.org/v3/index.json --api-key ${{ secrets.NUGET_API_KEY }}
+      run: dotnet nuget push **/*.nupkg -s https://api.nuget.org/v3/index.json --api-key ${{ secrets.NUGET_API_KEY }}
