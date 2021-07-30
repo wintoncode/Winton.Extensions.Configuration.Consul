@@ -1,0 +1,96 @@
+name: Build
+on:
+  push:
+    branches:
+    - master
+    tags:
+    - "*"
+  pull_request:
+jobs:
+  calculate-version:
+    runs-on: ubuntu-20.04
+    outputs:
+      version: ${{ steps.version.outputs.version }}
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@master
+      with:
+        fetch-depth: 0
+    - name: Install GitVersion
+      uses: gittools/actions/gitversion/setup@v0.9.9
+      with:
+        versionSpec: "5.6.9"
+    - name: Run GitVersion
+      id: gitversion
+      uses: gittools/actions/gitversion/execute@v0.9.9
+    - name: Version
+      id: version
+      run: |
+        version=${{ steps.gitversion.outputs.nuGetVersionV2 }}
+        if [ "${{ github.event_name }}" == "pull_request" ]
+        then
+            version=${version}-${{ steps.gitversion.outputs.shortSha }}
+        fi
+        echo "::set-output name=version::${version}"
+  build:
+    runs-on: ${{ matrix.os }}
+    needs: [calculate-version]
+    strategy:
+      matrix:
+        include:
+        - os: ubuntu-20.04
+          integrationTest: true
+          nugetPush: false
+        - os: windows-2019
+          integrationTest: false
+          nugetPush: true
+        - os: macos-10.15
+          integrationTest: false
+          nugetPush: false
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@master
+        with:
+          fetch-depth: 0
+          submodules: recursive
+      - name: Setup dotnet SDK 3
+        uses: actions/setup-dotnet@v1
+        with:
+          dotnet-version: "3.1.411"
+      - name: Setup dotnet SDK 5 # This gets us net461
+        uses: actions/setup-dotnet@v1
+        with:
+          dotnet-version: "5.0.300"
+      - name: Build
+        run: |
+          dotnet build -c Release -p:Version=${{ needs.calculate-version.outputs.version }}
+        shell: bash
+      - name: Test
+        run: dotnet test -c Release --no-build
+        shell: bash
+      - name: Integration Tests
+        if: ${{ matrix.integrationTest }}
+        run: ./test/Website/IntegrationTests/run.sh
+        shell: bash
+      - name: Archive NuGet Packages
+        uses: actions/upload-artifact@v2
+        if: ${{ matrix.nugetPush }}
+        with:
+          name: packages
+          path: |
+            **/*.nupkg
+            **/*.snupkg
+          retention-days: 1
+  nuget-push:
+    runs-on: ubuntu-20.04
+    needs: [build]
+    if: github.event_name != 'pull_request'
+    steps:
+    - name: Download NuGet Packages
+      uses: actions/download-artifact@v2
+      with:
+        name: packages
+    - name: NuGet Push
+      run: |
+        dotnet nuget push **/*.nupkg -s https://api.nuget.org/v3/index.json --api-key ${{ secrets.NUGET_API_KEY }}
+        dotnet nuget push **/*.snupkg -s https://api.nuget.org/v3/index.json --api-key ${{ secrets.NUGET_API_KEY }}
