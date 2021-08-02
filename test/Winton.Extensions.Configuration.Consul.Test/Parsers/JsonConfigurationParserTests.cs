@@ -27,7 +27,12 @@ namespace Winton.Extensions.Configuration.Consul.Parsers
                 new object[]
                 {
                     "{\"parent\": {\"child\": \"Value\"} }",
-                    new Dictionary<string, string?> { { "parent", null }, { "parent:child", "Value" } }
+                    new Dictionary<string, string?> { { "parent:child", "Value" } }
+                },
+                new object[]
+                {
+                    "{\"server\": {\"ip\": \"192.168.0.1\", \"port\": 5000} }",
+                    new Dictionary<string, string?> { { "server:ip", "192.168.0.1" }, { "server:port", "5000" } }
                 },
                 new object[]
                 {
