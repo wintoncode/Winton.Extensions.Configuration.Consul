@@ -136,7 +136,7 @@ namespace Winton.Extensions.Configuration.Consul
 
                     if (result.LastIndex > _lastIndex)
                     {
-                        Data = result.HasValue() ? result.ToConfigDictionary(_source.ConvertConsulKVPairToConfig) : null;
+                        Data = result.ToConfigDictionary(_source.ConvertConsulKVPairToConfig);
                         OnReload();
                     }
 
