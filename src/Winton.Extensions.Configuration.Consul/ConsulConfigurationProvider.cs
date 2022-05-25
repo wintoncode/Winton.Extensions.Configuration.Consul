@@ -134,7 +134,7 @@ namespace Winton.Extensions.Configuration.Consul
                 {
                     var result = await GetKvPairs(true, cancellationToken).ConfigureAwait(false);
 
-                    if (result.HasValue() && result.LastIndex > _lastIndex)
+                    if (result.LastIndex > _lastIndex)
                     {
                         SetData(result);
                         OnReload();
@@ -156,7 +156,7 @@ namespace Winton.Extensions.Configuration.Consul
 
         private void SetData(QueryResult<KVPair[]> result)
         {
-            Data = result.ToConfigDictionary(_source.ConvertConsulKVPairToConfig);
+            Data = result.HasValue() ? result.ToConfigDictionary(_source.ConvertConsulKVPairToConfig) : null;
         }
 
         private void SetLastIndex(QueryResult result)
