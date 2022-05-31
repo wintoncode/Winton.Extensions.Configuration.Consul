@@ -82,7 +82,7 @@ namespace Winton.Extensions.Configuration.Consul
 
                 if (result.HasValue())
                 {
-                    SetData(result);
+                    Data = result.ToConfigDictionary(_source.ConvertConsulKVPairToConfig);
                 }
                 else if (!_source.Optional)
                 {
@@ -134,9 +134,9 @@ namespace Winton.Extensions.Configuration.Consul
                 {
                     var result = await GetKvPairs(true, cancellationToken).ConfigureAwait(false);
 
-                    if (result.HasValue() && result.LastIndex > _lastIndex)
+                    if (result.LastIndex > _lastIndex)
                     {
-                        SetData(result);
+                        Data = result.ToConfigDictionary(_source.ConvertConsulKVPairToConfig);
                         OnReload();
                     }
 
@@ -152,11 +152,6 @@ namespace Winton.Extensions.Configuration.Consul
                     await Task.Delay(wait, cancellationToken);
                 }
             }
-        }
-
-        private void SetData(QueryResult<KVPair[]> result)
-        {
-            Data = result.ToConfigDictionary(_source.ConvertConsulKVPairToConfig);
         }
 
         private void SetLastIndex(QueryResult result)
