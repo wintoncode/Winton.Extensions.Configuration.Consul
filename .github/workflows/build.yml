@@ -8,7 +8,7 @@ on:
   pull_request:
 jobs:
   calculate-version:
-    runs-on: ubuntu-20.04
+    runs-on: ubuntu-22.04
     outputs:
       version: ${{ steps.version.outputs.version }}
     steps:
@@ -17,12 +17,12 @@ jobs:
       with:
         fetch-depth: 0
     - name: Install GitVersion
-      uses: gittools/actions/gitversion/setup@v0.9.9
+      uses: gittools/actions/gitversion/setup@v0.9.15
       with:
-        versionSpec: "5.6.9"
+        versionSpec: "5.12.0"
     - name: Run GitVersion
       id: gitversion
-      uses: gittools/actions/gitversion/execute@v0.9.9
+      uses: gittools/actions/gitversion/execute@v0.9.15
     - name: Version
       id: version
       run: |
@@ -38,7 +38,7 @@ jobs:
     strategy:
       matrix:
         include:
-        - os: ubuntu-20.04
+        - os: ubuntu-22.04
           integrationTest: true
           nugetPush: false
         - os: windows-2019
@@ -78,7 +78,7 @@ jobs:
             **/*.snupkg
           retention-days: 1
   nuget-push:
-    runs-on: ubuntu-20.04
+    runs-on: ubuntu-22.04
     needs: [build]
     if: github.event_name != 'pull_request'
     steps:
