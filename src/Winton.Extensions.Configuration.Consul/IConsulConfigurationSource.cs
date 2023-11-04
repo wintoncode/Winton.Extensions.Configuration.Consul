@@ -82,6 +82,12 @@ namespace Winton.Extensions.Configuration.Consul
         Func<ConsulWatchExceptionContext, TimeSpan>? OnWatchException { get; set; }
 
         /// <summary>
+        ///     Gets or sets a CancellationTokenSource used during the watching process.
+        ///     The CancellationTokenSource is employed to monitor changes during the watch operation and can be used to optionally cancel this process.
+        /// </summary>
+        CancellationTokenSource? WatchCancellationTokenSource { get; set; }
+
+        /// <summary>
         ///     Gets or sets a value indicating whether the config is optional.
         /// </summary>
         bool Optional { get; set; }
