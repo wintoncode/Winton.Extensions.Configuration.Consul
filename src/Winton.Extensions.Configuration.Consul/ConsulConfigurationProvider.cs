@@ -40,7 +40,7 @@ namespace Winton.Extensions.Configuration.Consul
 
             _source = source;
             _consulClientFactory = consulClientFactory;
-            _cancellationTokenSource = new CancellationTokenSource();
+            _cancellationTokenSource = source.WatchCancellationTokenSource ?? new CancellationTokenSource();
         }
 
         public void Dispose()
@@ -146,9 +146,9 @@ namespace Winton.Extensions.Configuration.Consul
                 catch (Exception exception)
                 {
                     var wait =
-                        _source.OnWatchException?.Invoke(
-                            new ConsulWatchExceptionContext(exception, ++consecutiveFailureCount, _source)) ??
-                        TimeSpan.FromSeconds(5);
+                            _source.OnWatchException?.Invoke(
+                                new ConsulWatchExceptionContext(exception, ++consecutiveFailureCount, _source)) ??
+                            TimeSpan.FromSeconds(5);
                     await Task.Delay(wait, cancellationToken);
                 }
             }
