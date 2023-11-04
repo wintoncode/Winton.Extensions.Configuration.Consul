@@ -40,7 +40,8 @@ namespace Winton.Extensions.Configuration.Consul
 
             _source = source;
             _consulClientFactory = consulClientFactory;
-            _cancellationTokenSource = source.WatchCancellationTokenSource ?? new CancellationTokenSource();
+            source.WatchCancellationTokenSource ??= new CancellationTokenSource();
+            _cancellationTokenSource = source.WatchCancellationTokenSource;
         }
 
         public void Dispose()
