@@ -22,6 +22,7 @@ namespace Winton.Extensions.Configuration.Consul
     /// </remarks>
     internal sealed class ConsulConfigurationProvider : ConfigurationProvider, IDisposable
     {
+        private readonly CancellationTokenSource _cancellationTokenSource;
         private readonly IConsulClientFactory _consulClientFactory;
         private readonly IConsulConfigurationSource _source;
         private ulong _lastIndex;
@@ -37,9 +38,19 @@ namespace Winton.Extensions.Configuration.Consul
                 throw new ArgumentNullException(nameof(source.Parser));
             }
 
-            source.WatchCancellationTokenSource ??= new CancellationTokenSource();
             _source = source;
             _consulClientFactory = consulClientFactory;
+            _cancellationTokenSource = new CancellationTokenSource();
+            if (_source.WatchCancellationTokenSource != null)
+            {
+                _source.WatchCancellationTokenSource.Token.Register(() =>
+                {
+                    if (!_disposed && !_cancellationTokenSource.IsCancellationRequested)
+                    {
+                        _cancellationTokenSource.Cancel();
+                    }
+                });
+            }
         }
 
         public void Dispose()
@@ -49,8 +60,8 @@ namespace Winton.Extensions.Configuration.Consul
                 return;
             }
 
-            _source.WatchCancellationTokenSource!.Cancel();
-            _source.WatchCancellationTokenSource!.Dispose();
+            _cancellationTokenSource.Cancel();
+            _cancellationTokenSource.Dispose();
             _disposed = true;
         }
 
@@ -62,7 +73,7 @@ namespace Winton.Extensions.Configuration.Consul
                 return;
             }
 
-            var cancellationToken = _source.WatchCancellationTokenSource!.Token;
+            var cancellationToken = _cancellationTokenSource.Token;
 
             DoLoad(cancellationToken).GetAwaiter().GetResult();
 
