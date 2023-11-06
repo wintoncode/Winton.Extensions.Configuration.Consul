@@ -82,9 +82,13 @@ namespace Winton.Extensions.Configuration.Consul
         Func<ConsulWatchExceptionContext, TimeSpan>? OnWatchException { get; set; }
 
         /// <summary>
-        ///     Gets or sets a CancellationTokenSource used during the watching process.
-        ///     The CancellationTokenSource is employed to monitor changes during the watch operation and can be used to optionally cancel this process.
+        ///     Gets or sets a <see cref="CancellationTokenSource" /> which can be used to cancel the background task that watches Consul for changes to this config.
         /// </summary>
+        /// <remarks>
+        ///    Cancelling the watch task by calling <c>Cancel()</c> on this <c>CancellationTokenSource</c> will completely terminate the watching process and it is not possible to restart it after this.
+        ///    By default this configuration provider will terminate the watch task itself when the <c>ConsulConfigurationProvider</c> is disposed.
+        ///    This functionality is only useful if you need to terminate the watch task early in response to some other event or want explicit control over when it is cancelled for some other reasons.
+        /// </remarks>
         CancellationTokenSource? WatchCancellationTokenSource { get; set; }
 
         /// <summary>
