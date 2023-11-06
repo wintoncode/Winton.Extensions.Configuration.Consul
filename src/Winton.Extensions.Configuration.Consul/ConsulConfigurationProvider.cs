@@ -153,7 +153,7 @@ namespace Winton.Extensions.Configuration.Consul
                     SetLastIndex(result);
                     consecutiveFailureCount = 0;
                 }
-                catch (Exception exception)
+                catch (Exception exception) when (!cancellationToken.IsCancellationRequested)
                 {
                     var wait =
                         _source.OnWatchException?.Invoke(
