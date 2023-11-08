@@ -1,5 +1,5 @@
 consul:
-  image: consul
+  image: hashicorp/consul:1.15
 website:
   build: ../
   dockerfile: Dockerfile
