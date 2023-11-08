@@ -41,6 +41,16 @@ namespace Winton.Extensions.Configuration.Consul
             _source = source;
             _consulClientFactory = consulClientFactory;
             _cancellationTokenSource = new CancellationTokenSource();
+            if (_source.WatchCancellationTokenSource != null)
+            {
+                _source.WatchCancellationTokenSource.Token.Register(() =>
+                {
+                    if (!_disposed && !_cancellationTokenSource.IsCancellationRequested)
+                    {
+                        _cancellationTokenSource.Cancel();
+                    }
+                });
+            }
         }
 
         public void Dispose()
@@ -143,7 +153,7 @@ namespace Winton.Extensions.Configuration.Consul
                     SetLastIndex(result);
                     consecutiveFailureCount = 0;
                 }
-                catch (Exception exception)
+                catch (Exception exception) when (!cancellationToken.IsCancellationRequested)
                 {
                     var wait =
                         _source.OnWatchException?.Invoke(

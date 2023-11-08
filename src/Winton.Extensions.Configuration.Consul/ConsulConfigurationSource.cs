@@ -4,6 +4,7 @@
 using System;
 using System.Collections.Generic;
 using System.Net.Http;
+using System.Threading;
 using Consul;
 using Microsoft.Extensions.Configuration;
 using Winton.Extensions.Configuration.Consul.Extensions;
@@ -46,6 +47,8 @@ namespace Winton.Extensions.Configuration.Consul
         public Action<ConsulLoadExceptionContext>? OnLoadException { get; set; }
 
         public Func<ConsulWatchExceptionContext, TimeSpan>? OnWatchException { get; set; }
+
+        public CancellationTokenSource? WatchCancellationTokenSource { get; set; }
 
         public bool Optional { get; set; } = false;
 
