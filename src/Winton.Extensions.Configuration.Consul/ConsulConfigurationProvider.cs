@@ -3,6 +3,7 @@
 
 using System;
 using System.Net;
+using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
 using Consul;
@@ -84,6 +85,20 @@ namespace Winton.Extensions.Configuration.Consul
             }
         }
 
+        public override void Set(string key, string value)
+        {
+            using var client = _consulClientFactory.Create();
+
+            var kvPair = new KVPair(key)
+            {
+                Value = Encoding.UTF8.GetBytes(value)
+            };
+
+            client.KV.Put(kvPair);
+
+            Load();
+        }
+
         private async Task DoLoad(CancellationToken cancellationToken)
         {
             try
@@ -132,7 +147,7 @@ namespace Winton.Extensions.Configuration.Consul
                 HttpStatusCode.OK => result,
                 HttpStatusCode.NotFound => result,
                 _ => throw new Exception($"Error loading configuration from consul. Status code: {result.StatusCode}.")
-            };
+                };
         }
 
         private async Task PollingLoop(CancellationToken cancellationToken)

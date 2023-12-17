@@ -13,7 +13,7 @@
     <AdditionalFiles Include="$(MSBuildThisFileDirectory)stylecop.json" />
   </ItemGroup>
 
-  <ItemGroup>
-    <PackageReference Include="StyleCop.Analyzers" Version="1.1.118" PrivateAssets="All" />
-  </ItemGroup>
+<!--  <ItemGroup>-->
+<!--    <PackageReference Include="StyleCop.Analyzers" Version="1.1.118" PrivateAssets="All" />-->
+<!--  </ItemGroup>-->
 </Project>

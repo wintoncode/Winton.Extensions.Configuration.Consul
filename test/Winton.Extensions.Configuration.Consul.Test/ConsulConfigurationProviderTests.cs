@@ -24,7 +24,7 @@ namespace Winton.Extensions.Configuration.Consul
 
         public ConsulConfigurationProviderTests()
         {
-            _kvEndpoint = new Mock<IKVEndpoint>(MockBehavior.Strict);
+            _kvEndpoint = new Mock<IKVEndpoint>(MockBehavior.Default);
             var consulClient = new Mock<IConsulClient>(MockBehavior.Strict);
             consulClient
                 .Setup(cc => cc.KV)
@@ -676,19 +676,168 @@ namespace Winton.Extensions.Configuration.Consul
             }
         }
 
-        public sealed class CustomizeConvertConsulKVPairToConfig : ConsulConfigurationProviderTests
+        public class CustomizeConvertConsulKVPairToConfig : ConsulConfigurationProviderTests
         {
             public CustomizeConvertConsulKVPairToConfig()
             {
                 _source.ReloadOnChange = false;
+            }
+            public sealed class ProviderSetterTest : CustomizeConvertConsulKVPairToConfig
+            {
+                [Fact]
+                private void ShouldSetConfigKeyAndLoadDataAgain()
+                {
+                    // Arrange
+                    _parser
+                        .Setup(cp => cp.Parse(It.IsAny<MemoryStream>()))
+                        .Throws(new Exception("Should not get here..."));
+                    _kvEndpoint
+                        .Setup(kv =>
+                            kv.Put(It.IsAny<KVPair>(), It.IsAny<WriteOptions>(), It.IsAny<CancellationToken>()))
+                        .ReturnsAsync(new WriteResult<bool>()
+                        {
+                            StatusCode = HttpStatusCode.OK,
+                            Response = true
+                        });
+
+                    _kvEndpoint
+                        .Setup(kv => kv.List("Test", It.IsAny<QueryOptions>(), It.IsAny<CancellationToken>()))
+                        .ReturnsAsync(
+                            new QueryResult<KVPair[]>
+                            {
+                                Response = new[]
+                                {
+                                    new KVPair("Test/key__with__double__underscores") { Value = Encoding.UTF8.GetBytes("Value") }
+                                },
+                                StatusCode = HttpStatusCode.OK
+                            });
+
+                    _source.ConvertConsulKVPairToConfig = kvPair =>
+                    {
+                        var normalizedKey = kvPair.Key
+                                                  .Replace("__", ":")
+                                                  .Replace(_source.KeyToRemove, string.Empty)
+                                                  .Trim('/');
+
+                        using Stream valueStream = new MemoryStream(kvPair.Value);
+                        using var streamReader = new StreamReader(valueStream);
+                        var parsedValue = streamReader.ReadToEnd();
+
+                        return new Dictionary<string, string>()
+                        {
+                            { normalizedKey, parsedValue }
+                        };
+                    };
+
+                    // Act
+                    _provider.Load();
+
+                    var kvPairToSet = new KVPair("hi")
+                    {
+                        Value = Encoding.UTF8.GetBytes("hello")
+                    };
+                    _kvEndpoint
+                        .Setup(kv => kv.List("Test", It.IsAny<QueryOptions>(), It.IsAny<CancellationToken>()))
+                        .ReturnsAsync(
+                            new QueryResult<KVPair[]>
+                            {
+                                Response = new[]
+                                {
+                                    new KVPair("Test/key__with__double__underscores") { Value = Encoding.UTF8.GetBytes("Value") },
+                                    kvPairToSet
+                                },
+                                StatusCode = HttpStatusCode.OK
+                            });
+
+                    _provider.Set("hi", "hello");
+
+                    _provider.TryGet("hi", out var value);
+
+                    // Assert
+                    value.Should().Be("hello");
+                }
+
+                [Fact]
+                private void ShouldSetConfigKeyContainingDirectorySepratorSignsAndLoadDataAgain()
+                {
+                    // Arrange
+                    _parser
+                        .Setup(cp => cp.Parse(It.IsAny<MemoryStream>()))
+                        .Throws(new Exception("Should not get here..."));
+                    _kvEndpoint
+                        .Setup(kv =>
+                            kv.Put(It.Is<KVPair>(x => x.Key == "hi__hello"), It.IsAny<WriteOptions>(), It.IsAny<CancellationToken>()))
+                        .ReturnsAsync(new WriteResult<bool>()
+                        {
+                            StatusCode = HttpStatusCode.OK,
+                            Response = true
+                        });
+
+                    _kvEndpoint
+                        .Setup(kv => kv.List("Test", It.IsAny<QueryOptions>(), It.IsAny<CancellationToken>()))
+                        .ReturnsAsync(
+                            new QueryResult<KVPair[]>
+                            {
+                                Response = new[]
+                                {
+                                    new KVPair("Test/key__with__double__underscores") { Value = Encoding.UTF8.GetBytes("Value") }
+                                },
+                                StatusCode = HttpStatusCode.OK
+                            });
+
+                    _source.ConvertConsulKVPairToConfig = kvPair =>
+                    {
+                        var normalizedKey = kvPair.Key
+                                                  .Replace("__", ":")
+                                                  .Replace(_source.KeyToRemove, string.Empty)
+                                                  .Trim('/');
+
+                        using Stream valueStream = new MemoryStream(kvPair.Value);
+                        using var streamReader = new StreamReader(valueStream);
+                        var parsedValue = streamReader.ReadToEnd();
+
+                        return new Dictionary<string, string>()
+                        {
+                            { normalizedKey, parsedValue }
+                        };
+                    };
+
+                    // Act
+                    _provider.Load();
+
+                    var kvPairToSet = new KVPair("hi__hello")
+                    {
+                        Value = Encoding.UTF8.GetBytes("hello")
+                    };
+                    _kvEndpoint
+                        .Setup(kv => kv.List("Test", It.IsAny<QueryOptions>(), It.IsAny<CancellationToken>()))
+                        .ReturnsAsync(
+                            new QueryResult<KVPair[]>
+                            {
+                                Response = new[]
+                                {
+                                    new KVPair("Test/key__with__double__underscores") { Value = Encoding.UTF8.GetBytes("Value") },
+                                    kvPairToSet
+                                },
+                                StatusCode = HttpStatusCode.OK
+                            });
+
+                    _provider.Set("hi:hello", "hello");
+
+                    _provider.TryGet("hi:hello", out var value);
+
+                    // Assert
+                    value.Should().Be("hello");
+                }
+                
             }
 
             [Fact]
             private void ShouldSetData()
             {
                 _parser
-                  .Setup(cp => cp.Parse(It.IsAny<MemoryStream>()))
-                  .Throws(new Exception("Should not get here..."));
+                    .Setup(cp => cp.Parse(It.IsAny<MemoryStream>()))
+                    .Throws(new Exception("Should not get here..."));
                 _kvEndpoint
                     .Setup(kv => kv.List("Test", It.IsAny<QueryOptions>(), It.IsAny<CancellationToken>()))
                     .ReturnsAsync(
@@ -704,9 +853,9 @@ namespace Winton.Extensions.Configuration.Consul
                 _source.ConvertConsulKVPairToConfig = kvPair =>
                 {
                     var normalizedKey = kvPair.Key
-                      .Replace("__", ":")
-                      .Replace(_source.KeyToRemove, string.Empty)
-                      .Trim('/');
+                                              .Replace("__", ":")
+                                              .Replace(_source.KeyToRemove, string.Empty)
+                                              .Trim('/');
 
                     using Stream valueStream = new MemoryStream(kvPair.Value);
                     using var streamReader = new StreamReader(valueStream);
@@ -723,13 +872,15 @@ namespace Winton.Extensions.Configuration.Consul
                 _provider.TryGet("key:with:double:underscores", out var value);
                 value.Should().Be("Value");
             }
+            
+
 
             [Fact]
             private void ShouldSetDataUsingDefinedParser()
             {
                 _parser
-                  .Setup(cp => cp.Parse(It.IsAny<MemoryStream>()))
-                  .Returns(new Dictionary<string, string> { { string.Empty, "Value" } });
+                    .Setup(cp => cp.Parse(It.IsAny<MemoryStream>()))
+                    .Returns(new Dictionary<string, string> { { string.Empty, "Value" } });
                 _kvEndpoint
                     .Setup(kv => kv.List("Test", It.IsAny<QueryOptions>(), It.IsAny<CancellationToken>()))
                     .ReturnsAsync(
@@ -745,17 +896,17 @@ namespace Winton.Extensions.Configuration.Consul
                 _source.ConvertConsulKVPairToConfig = kvPair =>
                 {
                     var normalizedKey = kvPair.Key
-                      .Replace("__", ":")
-                      .Replace(_source.KeyToRemove, string.Empty)
-                      .Trim('/');
+                                              .Replace("__", ":")
+                                              .Replace(_source.KeyToRemove, string.Empty)
+                                              .Trim('/');
 
                     using Stream valueStream = new MemoryStream(kvPair.Value);
                     var parsedPairs = _source.Parser.Parse(valueStream);
                     return parsedPairs.Select(parsedPair =>
                     {
                         return new KeyValuePair<string, string>(
-                                                $"{normalizedKey}/{parsedPair.Key}".Trim('/'),
-                                                parsedPair.Value);
+                            $"{normalizedKey}/{parsedPair.Key}".Trim('/'),
+                            parsedPair.Value);
                     });
                 };
 
